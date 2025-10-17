@@ -16,6 +16,7 @@ import { verifyToken } from '../auth/session';
 
 // todo: put this in server action guard maybe
 export const getUser = async (): Promise<User | null> => {
+	console.log(process.env.POSTGRES_URL);
 	const sessionCookie = (await cookies()).get('session');
 	if (!sessionCookie || !sessionCookie.value) {
 		return null;
