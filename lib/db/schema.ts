@@ -149,6 +149,11 @@ export type TeamDataWithMembers = Team & {
 		user: Pick<User, 'id' | 'name' | 'email'>;
 	})[];
 };
+export type SanitizedActivityLog = Omit<ActivityLog, 'userId' | 'teamId'>;
+export interface UserWithTeamId {
+	user: User;
+	teamId: number | null;
+}
 
 export enum ActivityType {
 	SIGN_UP = 'SIGN_UP',

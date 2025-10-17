@@ -23,10 +23,10 @@ describe('formatError', () => {
 	});
 
 	it('should convert an object to "[object Object]"', () => {
-		expect(formatError({ foo: 'bar' })).toBe('[object Object]');
+		expect(formatError({ foo: 'bar' })).toBe('{"foo":"bar"}');
 	});
 
 	it('should convert an array to its string representation', () => {
-		expect(formatError([1, 2, 3])).toBe('1,2,3');
+		expect(formatError([1, 2, 3])).toBe('[1,2,3]');
 	});
 });

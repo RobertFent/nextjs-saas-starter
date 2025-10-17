@@ -25,6 +25,11 @@ import {
 	User
 } from '@/lib/db/schema';
 import { createCheckoutSession } from '@/lib/payments/stripe';
+import { logger } from '@/lib/logger';
+
+const log = logger.child({
+	login: 'action'
+});
 
 const logActivity = async (
 	teamId: number | null | undefined,
@@ -116,8 +121,9 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
 		.limit(1);
 
 	if (existingUser.length > 0) {
+		log.error(`User with email: ${email} already existing.`);
 		return {
-			error: 'Failed to create user. Please try again.',
+			error: 'User is already existing.',
 			email,
 			password
 		};
@@ -131,9 +137,11 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
 		role: 'owner' // Default role, will be overridden if there's an invitation
 	};
 
+	// todo: what about try catch?
 	const [createdUser] = await db.insert(users).values(newUser).returning();
 
 	if (!createdUser) {
+		log.error(`Failed to create user with email: ${email}.`);
 		return {
 			error: 'Failed to create user. Please try again.',
 			email,

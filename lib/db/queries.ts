@@ -1,20 +1,21 @@
 import { desc, and, eq, isNull } from 'drizzle-orm';
 import { db } from './drizzle';
-import { activityLogs, teamMembers, teams, users } from './schema';
+import {
+	activityLogs,
+	SanitizedActivityLog,
+	Team,
+	TeamDataWithMembers,
+	teamMembers,
+	teams,
+	User,
+	users,
+	UserWithTeamId
+} from './schema';
 import { cookies } from 'next/headers';
 import { verifyToken } from '../auth/session';
 
-// todo: type user
-export const getUser = async (): Promise<{
-	id: number;
-	name: string | null;
-	email: string;
-	passwordHash: string;
-	role: string;
-	createdAt: Date;
-	updatedAt: Date;
-	deletedAt: Date | null;
-} | null> => {
+// todo: put this in server action guard maybe
+export const getUser = async (): Promise<User | null> => {
 	const sessionCookie = (await cookies()).get('session');
 	if (!sessionCookie || !sessionCookie.value) {
 		return null;
@@ -39,27 +40,12 @@ export const getUser = async (): Promise<{
 		.where(and(eq(users.id, sessionData.user.id), isNull(users.deletedAt)))
 		.limit(1);
 
-	if (user.length === 0) {
-		return null;
-	}
-
-	return user[0];
+	return user.length > 0 ? user[0] : null;
 };
 
-// todo: type
 export const getTeamByStripeCustomerId = async (
 	customerId: string
-): Promise<{
-	id: number;
-	name: string;
-	createdAt: Date;
-	updatedAt: Date;
-	stripeCustomerId: string | null;
-	stripeSubscriptionId: string | null;
-	stripeProductId: string | null;
-	planName: string | null;
-	subscriptionStatus: string | null;
-} | null> => {
+): Promise<Team | null> => {
 	const result = await db
 		.select()
 		.from(teams)
@@ -87,22 +73,9 @@ export const updateTeamSubscription = async (
 		.where(eq(teams.id, teamId));
 };
 
-// todo: type
 export const getUserWithTeam = async (
 	userId: number
-): Promise<{
-	user: {
-		id: number;
-		name: string | null;
-		email: string;
-		passwordHash: string;
-		role: string;
-		createdAt: Date;
-		updatedAt: Date;
-		deletedAt: Date | null;
-	};
-	teamId: number | null;
-}> => {
+): Promise<UserWithTeamId | null> => {
 	const result = await db
 		.select({
 			user: users,
@@ -113,18 +86,10 @@ export const getUserWithTeam = async (
 		.where(eq(users.id, userId))
 		.limit(1);
 
-	return result[0];
+	return result.length > 0 ? result[0] : null;
 };
 
-export const getActivityLogs = async (): Promise<
-	{
-		id: number;
-		action: string;
-		timestamp: Date;
-		ipAddress: string | null;
-		userName: string | null;
-	}[]
-> => {
+export const getActivityLogs = async (): Promise<SanitizedActivityLog[]> => {
 	const user = await getUser();
 	if (!user) {
 		throw new Error('User not authenticated');
@@ -145,30 +110,7 @@ export const getActivityLogs = async (): Promise<
 		.limit(10);
 };
 
-// todo: type
-export const getTeamForUser = async (): Promise<{
-	name: string;
-	id: number;
-	createdAt: Date;
-	updatedAt: Date;
-	stripeCustomerId: string | null;
-	stripeSubscriptionId: string | null;
-	stripeProductId: string | null;
-	planName: string | null;
-	subscriptionStatus: string | null;
-	teamMembers: {
-		id: number;
-		role: string;
-		userId: number;
-		teamId: number;
-		joinedAt: Date;
-		user: {
-			name: string | null;
-			id: number;
-			email: string;
-		};
-	}[];
-} | null> => {
+export const getTeamForUser = async (): Promise<TeamDataWithMembers | null> => {
 	const user = await getUser();
 	if (!user) {
 		return null;
