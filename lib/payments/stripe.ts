@@ -6,6 +6,7 @@ import {
 	updateTeamSubscription
 } from '../db/queries';
 import { Team } from '../db/schema';
+import { StripePrice, StripeProduct } from '../definitions/stripe';
 
 // connect to stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -155,17 +156,7 @@ export const handleSubscriptionChange = async (
 	}
 };
 
-// todo: typing
-export const getStripePrices = async (): Promise<
-	{
-		id: string;
-		productId: string;
-		unitAmount: number | null;
-		currency: string;
-		interval: Stripe.Price.Recurring.Interval | undefined;
-		trialPeriodDays: number | null | undefined;
-	}[]
-> => {
+export const getStripePrices = async (): Promise<StripePrice[]> => {
 	const prices = await stripe.prices.list({
 		expand: ['data.product'],
 		active: true,
@@ -187,15 +178,7 @@ export const getStripePrices = async (): Promise<
 	});
 };
 
-// todo: type
-export const getStripeProducts = async (): Promise<
-	{
-		id: string;
-		name: string;
-		description: string | null;
-		defaultPriceId: string | undefined;
-	}[]
-> => {
+export const getStripeProducts = async (): Promise<StripeProduct[]> => {
 	const products = await stripe.products.list({
 		active: true,
 		expand: ['data.default_price']
