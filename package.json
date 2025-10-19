@@ -46,17 +46,14 @@
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {
-		"@cypress/snapshot": "^2.1.7",
 		"@eslint/eslintrc": "^3.3.1",
 		"@eslint/js": "^9.37.0",
 		"@next/eslint-plugin-next": "^15.5.5",
 		"@testing-library/jest-dom": "^6.9.1",
-		"@types/cypress-image-snapshot": "^3.1.9",
 		"@types/jest": "^30.0.0",
 		"@typescript-eslint/eslint-plugin": "^8.46.1",
 		"@typescript-eslint/parser": "^8.46.1",
 		"cypress": "^15.4.0",
-		"cypress-image-snapshot": "^4.0.1",
 		"eslint": "^9.37.0",
 		"eslint-config-next": "^15.5.5",
 		"eslint-config-prettier": "^10.1.8",
