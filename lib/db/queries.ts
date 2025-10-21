@@ -1,3 +1,4 @@
+import 'server-only';
 import { desc, eq } from 'drizzle-orm';
 import { db } from './drizzle';
 import {
@@ -101,4 +102,56 @@ export const getTeamForUser = async (): Promise<TeamDataWithMembers | null> => {
 	});
 
 	return result?.team || null;
+};
+
+export const createUserWithTeam = async (
+	clerkId: string,
+	email: string,
+	name: string
+): Promise<void> => {
+	const [user, team] = await Promise.all([
+		await db
+			.insert(users)
+			.values({
+				clerkId: clerkId,
+				email,
+				name
+			})
+			.returning(),
+		await db.insert(teams).values({ name: 'Team' }).returning()
+	]);
+
+	// todo: use TServerActionError
+	if (user.length < 1 || team.length < 1) {
+		throw Error('Failed creating user or team');
+	}
+
+	const teamMember = await db
+		.insert(teamMembers)
+		.values({ userId: user[0].id, teamId: team[0].id, role: 'owner' })
+		.returning();
+
+	if (teamMember.length < 1) {
+		throw Error('Failed creating team membership for user');
+	}
+};
+
+export const deleteUserWithTeam = async (clerkId: string): Promise<void> => {
+	const user = await db.query.users.findFirst({
+		where: (users, { eq }) => {
+			return eq(users.clerkId, clerkId);
+		},
+		with: {
+			teamMembers: true
+		}
+	});
+
+	if (!user) {
+		throw Error('User not found');
+	}
+
+	// this deletes sequential -> maybe use cascade in sql
+	await db.delete(teamMembers).where(eq(teamMembers.userId, user.id));
+	await db.delete(teams).where(eq(teams.id, user.teamMembers[0]?.teamId));
+	await db.delete(users).where(eq(users.clerkId, clerkId));
 };

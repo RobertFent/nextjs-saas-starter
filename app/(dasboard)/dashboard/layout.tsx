@@ -4,7 +4,7 @@ import { JSX, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Users, Settings, Shield, Activity, Menu } from 'lucide-react';
+import { Users, Activity, Menu } from 'lucide-react';
 
 export default function DashboardLayout({
 	children
@@ -16,9 +16,10 @@ export default function DashboardLayout({
 
 	const navItems = [
 		{ href: '/dashboard', icon: Users, label: 'Team' },
-		{ href: '/dashboard/general', icon: Settings, label: 'General' },
-		{ href: '/dashboard/activity', icon: Activity, label: 'Activity' },
-		{ href: '/dashboard/security', icon: Shield, label: 'Security' }
+		// todo: remove this page but keep it for now for reference how to use forms
+		// { href: '/dashboard/general', icon: Settings, label: 'General' },
+		{ href: '/dashboard/activity', icon: Activity, label: 'Activity' }
+		// { href: '/dashboard/security', icon: Shield, label: 'Security' }
 	];
 
 	return (

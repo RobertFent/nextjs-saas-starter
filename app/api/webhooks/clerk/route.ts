@@ -1,13 +1,10 @@
 import { Webhook } from 'svix';
-import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { WebhookEvent } from '@clerk/nextjs/server';
+import { createUserWithTeam, deleteUserWithTeam } from '@/lib/db/queries';
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET!;
 
-// this was not received
 export async function POST(request: Request): Promise<Response> {
 	const payload = await request.text();
 	const svixId = request.headers.get('svix-id');
@@ -41,17 +38,16 @@ export async function POST(request: Request): Promise<Response> {
 		const data = event.data;
 		const { id, email_addresses, first_name, last_name } = data;
 		const email = email_addresses?.[0]?.email_address;
-
-		await db.insert(users).values({
-			clerkId: id,
-			email,
-			name: `${first_name ?? ''} ${last_name ?? ''}`.trim()
-		});
+		const name = `${first_name ?? ''} ${last_name ?? ''}`.trim();
+		await createUserWithTeam(id, email, name);
 	}
 
 	if (type === 'user.deleted') {
 		const data = event.data;
-		await db.delete(users).where(eq(users.clerkId, data.id ?? ''));
+		const { id } = data;
+		if (id) {
+			await deleteUserWithTeam(data.id ?? '');
+		}
 	}
 
 	return new Response('ok');
