@@ -10,7 +10,7 @@ import {
 	CardFooter
 } from '@/components/ui/card';
 import { JSX, useActionState } from 'react';
-import { removeTeamMember, inviteTeamMember } from '@/app/(login)/actions';
+import { removeTeamMember, inviteTeamMember } from '@/lib/actions';
 import useSWR from 'swr';
 import { Suspense } from 'react';
 import { Input } from '@/components/ui/input';
@@ -19,18 +19,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { TeamDataWithMembers, User } from '@/lib/db/schema';
 import { customerPortalAction } from '@/lib/payments/actions';
+import { fetcher } from '@/lib/utils';
 
 interface ActionState {
 	error?: string;
 	success?: string;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fetcher = (url: string): Promise<any> => {
-	return fetch(url).then((res) => {
-		return res.json();
-	});
-};
 
 function SubscriptionSkeleton(): JSX.Element {
 	return (

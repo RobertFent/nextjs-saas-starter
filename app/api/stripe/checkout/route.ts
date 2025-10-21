@@ -2,7 +2,6 @@ import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/payments/stripe';
-import { setSession } from '@/lib/auth/session';
 import { db } from '@/lib/db/drizzle';
 import { users, teamMembers, teams } from '@/lib/db/schema';
 
@@ -93,7 +92,6 @@ export async function GET(request: NextRequest): Promise<Response> {
 			})
 			.where(eq(teams.id, userTeam[0].teamId));
 
-		await setSession(user[0]);
 		return NextResponse.redirect(new URL('/dashboard', request.url));
 	} catch (error) {
 		console.error('Error handling successful checkout:', error);

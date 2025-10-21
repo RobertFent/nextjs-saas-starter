@@ -107,3 +107,21 @@ In your Vercel project settings (or during deployment), add all the necessary en
 3. `STRIPE_WEBHOOK_SECRET`: Use the webhook secret from the production webhook you created in step 1.
 4. `POSTGRES_URL`: Set this to your production database URL.
 5. `AUTH_SECRET`: Set this to a random string. `openssl rand -base64 32` will generate one.
+
+## Additional Setup
+
+Clerk with its webhooks: https://dashboard.clerk.com/apps/app_34HG0hfpT1X83p4pYvaql2l3xr0/instances/ins_34HG0guneaiIErmyNAeoWtlqEAb/webhooks
+
+### Local Development
+
+expose api public so that clerk web hooks work
+
+```sh
+ngrok http 3000
+```
+
+launch in dev mode
+
+```sh
+pnpm dev
+```

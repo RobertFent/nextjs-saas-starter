@@ -38,3 +38,6 @@ next-env.d.ts
 # Docker
 postgres_data/
 .env*.local
+
+# clerk configuration (can include secrets)
+/.clerk/

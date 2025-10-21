@@ -1,12 +1,12 @@
 import Stripe from 'stripe';
 import { redirect } from 'next/navigation';
 import {
-	getUser,
 	getTeamByStripeCustomerId,
 	updateTeamSubscription
 } from '../db/queries';
 import { Team } from '../db/schema';
 import { StripePrice, StripeProduct } from '../definitions/stripe';
+import { getCurrentAppUser } from '../auth/actions';
 
 // connect to stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -20,9 +20,11 @@ export async function createCheckoutSession({
 	team: Team | null;
 	priceId: string;
 }): Promise<void> {
-	const user = await getUser();
+	// todo: put app user in guard maybe
+	const user = await getCurrentAppUser();
 
-	if (!team || !user) {
+	// todo: this enpoint does not exist anymore -> use session like in user; maybe join team and user
+	if (!team) {
 		redirect(`/sign-up?redirect=checkout&priceId=${priceId}`);
 	}
 

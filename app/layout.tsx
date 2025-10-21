@@ -3,7 +3,10 @@ import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import { SWRConfig } from 'swr';
 import { JSX } from 'react';
-import { getUser, getTeamForUser } from '@/lib/db/queries';
+import { getTeamForUser } from '@/lib/db/queries';
+import { ClerkProvider } from '@clerk/nextjs';
+import { getCurrentAppUser } from '@/lib/auth/actions';
+// import { getCurrentAppUser } from '@/lib/auth/actions';
 
 export const metadata: Metadata = {
 	title: 'Next.js SaaS Starter',
@@ -22,24 +25,27 @@ export default function RootLayout({
 	children: React.ReactNode;
 }): JSX.Element {
 	return (
-		<html
-			lang='en'
-			className={`bg-white dark:bg-gray-950 text-black dark:text-white ${manrope.className}`}
-		>
-			<body className='min-h-[100dvh] bg-gray-50'>
-				<SWRConfig
-					value={{
-						fallback: {
-							// We do NOT await here
-							// Only components that read this data will suspend
-							'/api/user': getUser(),
-							'/api/team': getTeamForUser()
-						}
-					}}
-				>
-					{children}
-				</SWRConfig>
-			</body>
-		</html>
+		<ClerkProvider>
+			<html
+				lang='en'
+				className={`bg-white dark:bg-gray-950 text-black dark:text-white ${manrope.className}`}
+			>
+				<body className='min-h-[100dvh] bg-gray-50'>
+					{/* <header className='flex justify-end items-center p-4 gap-4 h-16'></header> */}
+					<SWRConfig
+						value={{
+							fallback: {
+								// We do NOT await here
+								// Only components that read this data will suspend
+								'/api/user': getCurrentAppUser(),
+								'/api/team': getTeamForUser()
+							}
+						}}
+					>
+						{children}
+					</SWRConfig>
+				</body>
+			</html>
+		</ClerkProvider>
 	);
 }

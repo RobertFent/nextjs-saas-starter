@@ -1,4 +1,4 @@
-import { desc, and, eq, isNull } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db } from './drizzle';
 import {
 	activityLogs,
@@ -7,42 +7,10 @@ import {
 	TeamDataWithMembers,
 	teamMembers,
 	teams,
-	User,
 	users,
 	UserWithTeamId
 } from './schema';
-import { cookies } from 'next/headers';
-import { verifyToken } from '../auth/session';
-
-// todo: put this in server action guard maybe
-export const getUser = async (): Promise<User | null> => {
-	console.log(process.env.POSTGRES_URL);
-	const sessionCookie = (await cookies()).get('session');
-	if (!sessionCookie || !sessionCookie.value) {
-		return null;
-	}
-
-	const sessionData = await verifyToken(sessionCookie.value);
-	if (
-		!sessionData ||
-		!sessionData.user ||
-		typeof sessionData.user.id !== 'number'
-	) {
-		return null;
-	}
-
-	if (new Date(sessionData.expires) < new Date()) {
-		return null;
-	}
-
-	const user = await db
-		.select()
-		.from(users)
-		.where(and(eq(users.id, sessionData.user.id), isNull(users.deletedAt)))
-		.limit(1);
-
-	return user.length > 0 ? user[0] : null;
-};
+import { getCurrentAppUser } from '../auth/actions';
 
 export const getTeamByStripeCustomerId = async (
 	customerId: string
@@ -91,10 +59,7 @@ export const getUserWithTeam = async (
 };
 
 export const getActivityLogs = async (): Promise<SanitizedActivityLog[]> => {
-	const user = await getUser();
-	if (!user) {
-		throw new Error('User not authenticated');
-	}
+	const user = await getCurrentAppUser();
 
 	return await db
 		.select({
@@ -112,10 +77,7 @@ export const getActivityLogs = async (): Promise<SanitizedActivityLog[]> => {
 };
 
 export const getTeamForUser = async (): Promise<TeamDataWithMembers | null> => {
-	const user = await getUser();
-	if (!user) {
-		return null;
-	}
+	const user = await getCurrentAppUser();
 
 	const result = await db.query.teamMembers.findFirst({
 		where: eq(teamMembers.userId, user.id),
