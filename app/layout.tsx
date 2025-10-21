@@ -5,6 +5,7 @@ import { SWRConfig } from 'swr';
 import { JSX } from 'react';
 import { getTeamForUser } from '@/lib/db/queries';
 import { ClerkProvider } from '@clerk/nextjs';
+import { Analytics } from '@vercel/analytics/next';
 // import { getCurrentAppUser } from '@/lib/auth/actions';
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default function RootLayout({
 						}}
 					>
 						{children}
+						<Analytics />
 					</SWRConfig>
 				</body>
 			</html>
