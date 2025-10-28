@@ -1,9 +1,15 @@
-import { eq } from 'drizzle-orm';
+import { eq, isNull, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/payments/stripe';
 import { db } from '@/lib/db/drizzle';
 import { users, teamMembers, teams } from '@/lib/db/schema';
+import { logger } from '@/lib/logger';
+import { formatError } from '@/lib/formatters';
+
+const log = logger.child({
+	api: 'stripe/checkout'
+});
 
 export async function GET(request: NextRequest): Promise<Response> {
 	const searchParams = request.nextUrl.searchParams;
@@ -61,11 +67,11 @@ export async function GET(request: NextRequest): Promise<Response> {
 		const user = await db
 			.select()
 			.from(users)
-			.where(eq(users.id, Number(userId)))
+			.where(and(eq(users.id, userId), isNull(users.deletedAt)))
 			.limit(1);
 
 		if (user.length === 0) {
-			throw new Error('User not found in database.');
+			throw new Error('User deleted or not found in database.');
 		}
 
 		const userTeam = await db
@@ -73,7 +79,12 @@ export async function GET(request: NextRequest): Promise<Response> {
 				teamId: teamMembers.teamId
 			})
 			.from(teamMembers)
-			.where(eq(teamMembers.userId, user[0].id))
+			.where(
+				and(
+					eq(teamMembers.userId, user[0].id),
+					isNull(teamMembers.deletedAt)
+				)
+			)
 			.limit(1);
 
 		if (userTeam.length === 0) {
@@ -94,7 +105,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
 		return NextResponse.redirect(new URL('/dashboard', request.url));
 	} catch (error) {
-		console.error('Error handling successful checkout:', error);
+		log.error(`Error during stripe checkout: ${formatError(error)}`);
 		return NextResponse.redirect(new URL('/error', request.url));
 	}
 }

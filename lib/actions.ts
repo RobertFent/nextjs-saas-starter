@@ -1,59 +1,36 @@
 'use server';
 
 import { z } from 'zod';
-import { and, eq } from 'drizzle-orm';
-import { validatedActionWithUser } from '@/lib/auth/middleware';
+import { and, eq, isNull } from 'drizzle-orm';
+import { validatedActionWithUserAndTeamId } from '@/lib/auth/middleware';
 import { db } from '@/lib/db/drizzle';
-import { getUserWithTeam } from '@/lib/db/queries';
-import {
-	ActivityType,
-	NewActivityLog,
-	activityLogs,
-	users,
-	teamMembers,
-	invitations
-} from '@/lib/db/schema';
+import { ActivityType, users, teamMembers } from '@/lib/db/schema';
 import { logger } from '@/lib/logger';
+import { logActivity } from './serverFunctions';
+import { sendInvitation } from './auth/actions';
 
 const log = logger.child({
-	login: 'action'
+	server: 'action'
 });
-
-const logActivity = async (
-	teamId: number | null | undefined,
-	userId: number,
-	type: ActivityType,
-	ipAddress?: string
-): Promise<void> => {
-	if (teamId === null || teamId === undefined) {
-		return;
-	}
-	const newActivity: NewActivityLog = {
-		teamId,
-		userId,
-		action: type,
-		ipAddress: ipAddress || ''
-	};
-	log.debug(newActivity);
-	await db.insert(activityLogs).values(newActivity);
-};
 
 const updateAccountSchema = z.object({
 	name: z.string().min(1, 'Name is required').max(100),
 	email: z.string().email('Invalid email address')
 });
 
-export const updateAccount = validatedActionWithUser(
+export const updateAccount = validatedActionWithUserAndTeamId(
 	updateAccountSchema,
-	async (data, _, user) => {
+	async (data, _, userWithTeam) => {
 		const { name, email } = data;
-		const userWithTeam = await getUserWithTeam(user.id);
 
 		await Promise.all([
-			db.update(users).set({ name, email }).where(eq(users.id, user.id)),
+			db
+				.update(users)
+				.set({ name, email })
+				.where(eq(users.id, userWithTeam.user.id)),
 			logActivity(
-				userWithTeam?.teamId,
-				user.id,
+				userWithTeam.teamId,
+				userWithTeam.user.id,
 				ActivityType.UPDATE_ACCOUNT
 			)
 		]);
@@ -63,18 +40,13 @@ export const updateAccount = validatedActionWithUser(
 );
 
 const removeTeamMemberSchema = z.object({
-	memberId: z.number()
+	memberId: z.string()
 });
 
-export const removeTeamMember = validatedActionWithUser(
+export const removeTeamMember = validatedActionWithUserAndTeamId(
 	removeTeamMemberSchema,
-	async (data, _, user) => {
+	async (data, _, userWithTeam) => {
 		const { memberId } = data;
-		const userWithTeam = await getUserWithTeam(user.id);
-
-		if (!userWithTeam?.teamId) {
-			return { error: 'User is not part of a team' };
-		}
 
 		await db
 			.delete(teamMembers)
@@ -87,9 +59,11 @@ export const removeTeamMember = validatedActionWithUser(
 
 		await logActivity(
 			userWithTeam.teamId,
-			user.id,
+			userWithTeam.user.id,
 			ActivityType.REMOVE_TEAM_MEMBER
 		);
+
+		log.debug(`Team member with id: ${memberId} removed`);
 
 		return { success: 'Team member removed successfully' };
 	}
@@ -100,15 +74,10 @@ const inviteTeamMemberSchema = z.object({
 	role: z.enum(['member', 'owner'])
 });
 
-export const inviteTeamMember = validatedActionWithUser(
+export const inviteTeamMember = validatedActionWithUserAndTeamId(
 	inviteTeamMemberSchema,
-	async (data, _, user) => {
+	async (data, _, userWithTeam) => {
 		const { email, role } = data;
-		const userWithTeam = await getUserWithTeam(user.id);
-
-		if (!userWithTeam?.teamId) {
-			return { error: 'User is not part of a team' };
-		}
 
 		const existingMember = await db
 			.select()
@@ -117,7 +86,9 @@ export const inviteTeamMember = validatedActionWithUser(
 			.where(
 				and(
 					eq(users.email, email),
-					eq(teamMembers.teamId, userWithTeam.teamId)
+					eq(teamMembers.teamId, userWithTeam.teamId),
+					isNull(users.deletedAt),
+					isNull(teamMembers.deletedAt)
 				)
 			)
 			.limit(1);
@@ -126,42 +97,18 @@ export const inviteTeamMember = validatedActionWithUser(
 			return { error: 'User is already a member of this team' };
 		}
 
-		// Check if there's an existing invitation
-		const existingInvitation = await db
-			.select()
-			.from(invitations)
-			.where(
-				and(
-					eq(invitations.email, email),
-					eq(invitations.teamId, userWithTeam.teamId),
-					eq(invitations.status, 'pending')
-				)
-			)
-			.limit(1);
-
-		if (existingInvitation.length > 0) {
-			return {
-				error: 'An invitation has already been sent to this email'
-			};
-		}
-
 		// Create a new invitation
-		await db.insert(invitations).values({
-			teamId: userWithTeam.teamId,
-			email,
-			role,
-			invitedBy: user.id,
-			status: 'pending'
-		});
+		await sendInvitation(email, userWithTeam.teamId, role);
 
 		await logActivity(
 			userWithTeam.teamId,
-			user.id,
+			userWithTeam.user.id,
 			ActivityType.INVITE_TEAM_MEMBER
 		);
 
-		// TODO: Send invitation email and include ?inviteId={id} to sign-up URL
-		// await sendInvitationEmail(email, userWithTeam.team.name, role)
+		log.debug(
+			`User with id: ${userWithTeam.user.id} invited to team with id: ${userWithTeam.teamId}`
+		);
 
 		return { success: 'Invitation sent successfully' };
 	}

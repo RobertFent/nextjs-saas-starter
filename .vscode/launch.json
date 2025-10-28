@@ -5,13 +5,13 @@
 			"name": "Next.js: debug server-side",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "yarn run dev:debugger"
+			"command": "pnpm dev"
 		},
 		{
 			"name": "Next.js: debug full stack",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "yarn run dev:debugger",
+			"command": "pnpm dev",
 			"serverReadyAction": {
 				"pattern": "- Local:.+(https?://.+)",
 				"uriFormat": "%s",

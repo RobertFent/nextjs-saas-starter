@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'; // todo: this is forced dynamic due to auth workflow -> verify if there is a better approach
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActivityLogs } from '@/lib/db/queries';
 import { ActivityType } from '@/lib/db/schema';
@@ -5,7 +7,6 @@ import {
 	Settings,
 	LogOut,
 	UserPlus,
-	Lock,
 	UserCog,
 	AlertCircle,
 	UserMinus,
@@ -19,7 +20,6 @@ const iconMap: Record<ActivityType, LucideIcon> = {
 	[ActivityType.SIGN_UP]: UserPlus,
 	[ActivityType.SIGN_IN]: UserCog,
 	[ActivityType.SIGN_OUT]: LogOut,
-	[ActivityType.UPDATE_PASSWORD]: Lock,
 	[ActivityType.DELETE_ACCOUNT]: UserMinus,
 	[ActivityType.UPDATE_ACCOUNT]: Settings,
 	[ActivityType.CREATE_TEAM]: UserPlus,
@@ -55,8 +55,6 @@ function formatAction(action: ActivityType): string {
 			return 'You signed in';
 		case ActivityType.SIGN_OUT:
 			return 'You signed out';
-		case ActivityType.UPDATE_PASSWORD:
-			return 'You changed your password';
 		case ActivityType.DELETE_ACCOUNT:
 			return 'You deleted your account';
 		case ActivityType.UPDATE_ACCOUNT:
@@ -108,8 +106,6 @@ export default async function ActivityPage(): Promise<JSX.Element> {
 										<div className='flex-1'>
 											<p className='text-sm font-medium text-gray-900'>
 												{formattedAction}
-												{log.ipAddress &&
-													` from IP ${log.ipAddress}`}
 											</p>
 											<p className='text-xs text-gray-500'>
 												{getRelativeTime(
@@ -128,8 +124,8 @@ export default async function ActivityPage(): Promise<JSX.Element> {
 								No activity yet
 							</h3>
 							<p className='text-sm text-gray-500 max-w-sm'>
-								When you perform actions like signing in or
-								updating your account, they&apos;ll appear here.
+								When you perform actions like signing in,
+								they&apos;ll appear here.
 							</p>
 						</div>
 					)}

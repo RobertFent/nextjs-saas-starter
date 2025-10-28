@@ -125,3 +125,7 @@ launch in dev mode
 ```sh
 pnpm dev
 ```
+
+## TODOS
+
+- global error handling wrapper on api routes + snackbar for errors

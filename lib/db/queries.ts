@@ -1,17 +1,20 @@
 import 'server-only';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and, isNull } from 'drizzle-orm';
 import { db } from './drizzle';
 import {
 	activityLogs,
+	ActivityType,
 	SanitizedActivityLog,
 	Team,
 	TeamDataWithMembers,
+	TeamMember,
 	teamMembers,
 	teams,
 	users,
 	UserWithTeamId
 } from './schema';
 import { getCurrentAppUser } from '../auth/actions';
+import { logActivity } from '../serverFunctions';
 
 export const getTeamByStripeCustomerId = async (
 	customerId: string
@@ -19,14 +22,16 @@ export const getTeamByStripeCustomerId = async (
 	const result = await db
 		.select()
 		.from(teams)
-		.where(eq(teams.stripeCustomerId, customerId))
+		.where(
+			and(eq(teams.stripeCustomerId, customerId), isNull(teams.deletedAt))
+		)
 		.limit(1);
 
 	return result.length > 0 ? result[0] : null;
 };
 
 export const updateTeamSubscription = async (
-	teamId: number,
+	teamId: string,
 	subscriptionData: {
 		stripeSubscriptionId: string | null;
 		stripeProductId: string | null;
@@ -44,7 +49,7 @@ export const updateTeamSubscription = async (
 };
 
 export const getUserWithTeam = async (
-	userId: number
+	userId: string
 ): Promise<UserWithTeamId | null> => {
 	const result = await db
 		.select({
@@ -52,8 +57,14 @@ export const getUserWithTeam = async (
 			teamId: teamMembers.teamId
 		})
 		.from(users)
-		.leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-		.where(eq(users.id, userId))
+		.innerJoin(teamMembers, eq(users.id, teamMembers.userId))
+		.where(
+			and(
+				eq(users.id, userId),
+				isNull(users.deletedAt),
+				isNull(teamMembers.deletedAt)
+			)
+		)
 		.limit(1);
 
 	return result.length > 0 ? result[0] : null;
@@ -67,7 +78,6 @@ export const getActivityLogs = async (): Promise<SanitizedActivityLog[]> => {
 			id: activityLogs.id,
 			action: activityLogs.action,
 			timestamp: activityLogs.timestamp,
-			ipAddress: activityLogs.ipAddress,
 			userName: users.name
 		})
 		.from(activityLogs)
@@ -77,11 +87,11 @@ export const getActivityLogs = async (): Promise<SanitizedActivityLog[]> => {
 		.limit(10);
 };
 
-export const getTeamForUser = async (): Promise<TeamDataWithMembers | null> => {
-	const user = await getCurrentAppUser();
-
+export const getTeamForUser = async (
+	userId: string
+): Promise<TeamDataWithMembers | null> => {
 	const result = await db.query.teamMembers.findFirst({
-		where: eq(teamMembers.userId, user.id),
+		where: eq(teamMembers.userId, userId),
 		with: {
 			team: {
 				with: {
@@ -108,7 +118,7 @@ export const createUserWithTeam = async (
 	clerkId: string,
 	email: string,
 	name: string
-): Promise<void> => {
+): Promise<TeamMember> => {
 	const [user, team] = await Promise.all([
 		await db
 			.insert(users)
@@ -134,9 +144,13 @@ export const createUserWithTeam = async (
 	if (teamMember.length < 1) {
 		throw Error('Failed creating team membership for user');
 	}
+
+	return teamMember[0];
 };
 
-export const deleteUserWithTeam = async (clerkId: string): Promise<void> => {
+export const deleteUserWithTeamMembership = async (
+	clerkId: string
+): Promise<void> => {
 	const user = await db.query.users.findFirst({
 		where: (users, { eq }) => {
 			return eq(users.clerkId, clerkId);
@@ -150,8 +164,45 @@ export const deleteUserWithTeam = async (clerkId: string): Promise<void> => {
 		throw Error('User not found');
 	}
 
-	// this deletes sequential -> maybe use cascade in sql
-	await db.delete(teamMembers).where(eq(teamMembers.userId, user.id));
-	await db.delete(teams).where(eq(teams.id, user.teamMembers[0]?.teamId));
-	await db.delete(users).where(eq(users.clerkId, clerkId));
+	const [deletedTeamMemberships, deletedUsers] = await Promise.all([
+		await db
+			.update(teamMembers)
+			.set({ deletedAt: new Date() })
+			.where(eq(teamMembers.userId, user.id))
+			.returning(),
+		await db
+			.update(users)
+			.set({ deletedAt: new Date() })
+			.where(eq(users.clerkId, clerkId))
+			.returning()
+	]);
+
+	if (deletedTeamMemberships.length < 1 || deletedUsers.length < 1) {
+		throw Error('Error on deleting user or its team membership');
+	}
+
+	const deletedTeamMembership = deletedTeamMemberships[0];
+
+	await logActivity(
+		deletedTeamMembership.teamId,
+		deletedTeamMembership.userId,
+		ActivityType.DELETE_ACCOUNT
+	);
+
+	const remainingTeamMembers = await db
+		.select()
+		.from(teamMembers)
+		.where(
+			and(
+				eq(teamMembers.teamId, deletedTeamMembership.teamId),
+				isNull(teamMembers.deletedAt)
+			)
+		);
+
+	if (remainingTeamMembers.length > 0) {
+		await db
+			.update(teams)
+			.set({ deletedAt: new Date() })
+			.where(eq(teams.id, remainingTeamMembers[0].teamId));
+	}
 };

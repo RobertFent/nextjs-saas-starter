@@ -1,26 +1,18 @@
-import {
-	pgTable,
-	serial,
-	varchar,
-	text,
-	timestamp,
-	integer
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
-	id: serial('id').primaryKey(),
+	id: uuid('id').primaryKey().defaultRandom(),
 	clerkId: text('clerk_id'),
 	name: varchar('name', { length: 100 }),
 	email: varchar('email', { length: 255 }).notNull().unique(),
-	role: varchar('role', { length: 20 }).notNull().default('member'),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at').notNull().defaultNow(),
 	deletedAt: timestamp('deleted_at')
 });
 
 export const teams = pgTable('teams', {
-	id: serial('id').primaryKey(),
+	id: uuid('id').primaryKey().defaultRandom(),
 	name: varchar('name', { length: 100 }).notNull(),
 	stripeCustomerId: text('stripe_customer_id').unique(),
 	stripeSubscriptionId: text('stripe_subscription_id').unique(),
@@ -33,13 +25,13 @@ export const teams = pgTable('teams', {
 });
 
 export const teamMembers = pgTable('team_members', {
-	id: serial('id').primaryKey(),
-	userId: integer('user_id')
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('user_id')
 		.notNull()
 		.references(() => {
 			return users.id;
 		}),
-	teamId: integer('team_id')
+	teamId: uuid('team_id')
 		.notNull()
 		.references(() => {
 			return teams.id;
@@ -50,64 +42,29 @@ export const teamMembers = pgTable('team_members', {
 });
 
 export const activityLogs = pgTable('activity_logs', {
-	id: serial('id').primaryKey(),
-	teamId: integer('team_id')
+	id: uuid('id').primaryKey().defaultRandom(),
+	teamId: uuid('team_id')
 		.notNull()
 		.references(() => {
 			return teams.id;
 		}),
-	userId: integer('user_id').references(() => {
+	userId: uuid('user_id').references(() => {
 		return users.id;
 	}),
 	action: text('action').notNull(),
-	timestamp: timestamp('timestamp').notNull().defaultNow(),
-	ipAddress: varchar('ip_address', { length: 45 })
-});
-
-export const invitations = pgTable('invitations', {
-	id: serial('id').primaryKey(),
-	teamId: integer('team_id')
-		.notNull()
-		.references(() => {
-			return teams.id;
-		}),
-	email: varchar('email', { length: 255 }).notNull(),
-	role: varchar('role', { length: 50 }).notNull(),
-	invitedBy: integer('invited_by')
-		.notNull()
-		.references(() => {
-			return users.id;
-		}),
-	invitedAt: timestamp('invited_at').notNull().defaultNow(),
-	status: varchar('status', { length: 20 }).notNull().default('pending'),
-	deletedAt: timestamp('deleted_at')
+	timestamp: timestamp('timestamp').notNull().defaultNow()
 });
 
 export const teamsRelations = relations(teams, ({ many }) => {
 	return {
 		teamMembers: many(teamMembers),
-		activityLogs: many(activityLogs),
-		invitations: many(invitations)
+		activityLogs: many(activityLogs)
 	};
 });
 
 export const usersRelations = relations(users, ({ many }) => {
 	return {
-		teamMembers: many(teamMembers),
-		invitationsSent: many(invitations)
-	};
-});
-
-export const invitationsRelations = relations(invitations, ({ one }) => {
-	return {
-		team: one(teams, {
-			fields: [invitations.teamId],
-			references: [teams.id]
-		}),
-		invitedBy: one(users, {
-			fields: [invitations.invitedBy],
-			references: [users.id]
-		})
+		teamMembers: many(teamMembers)
 	};
 });
 
@@ -145,8 +102,6 @@ export type TeamMember = typeof teamMembers.$inferSelect;
 export type NewTeamMember = typeof teamMembers.$inferInsert;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type NewActivityLog = typeof activityLogs.$inferInsert;
-export type Invitation = typeof invitations.$inferSelect;
-export type NewInvitation = typeof invitations.$inferInsert;
 export type TeamDataWithMembers = Team & {
 	teamMembers: (TeamMember & {
 		user: Pick<User, 'id' | 'name' | 'email'>;
@@ -155,14 +110,13 @@ export type TeamDataWithMembers = Team & {
 export type SanitizedActivityLog = Omit<ActivityLog, 'userId' | 'teamId'>;
 export interface UserWithTeamId {
 	user: User;
-	teamId: number | null;
+	teamId: string;
 }
 
 export enum ActivityType {
 	SIGN_UP = 'SIGN_UP',
 	SIGN_IN = 'SIGN_IN',
 	SIGN_OUT = 'SIGN_OUT',
-	UPDATE_PASSWORD = 'UPDATE_PASSWORD',
 	DELETE_ACCOUNT = 'DELETE_ACCOUNT',
 	UPDATE_ACCOUNT = 'UPDATE_ACCOUNT',
 	CREATE_TEAM = 'CREATE_TEAM',

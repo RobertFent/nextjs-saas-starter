@@ -1,75 +1,31 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import pluginNext from '@next/eslint-plugin-next';
-import prettier from 'eslint-plugin-prettier';
-import pluginCypress from 'eslint-plugin-cypress';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import js from '@eslint/js';
-import { FlatCompat } from '@eslint/eslintrc';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-	baseDirectory: __dirname,
-	recommendedConfig: js.configs.recommended,
-	allConfig: js.configs.all
-});
+import prettier from 'eslint-plugin-prettier';
+import cypress from 'eslint-plugin-cypress';
 
 export default defineConfig([
-	globalIgnores([
-		'**/node_modules',
-		'**/.next',
-		'**/*.js',
-		'**/next-env.d.ts'
-	]),
+	// Next.js rules (includes react & react-hooks)
+	...nextVitals,
+
 	{
-		extends: compat.extends(
-			'next',
-			'eslint:recommended',
-			'plugin:prettier/recommended',
-			'plugin:@typescript-eslint/eslint-recommended',
-			'plugin:@typescript-eslint/strict',
-			'plugin:@typescript-eslint/stylistic',
-			'prettier',
-			'plugin:@next/next/recommended'
-		),
-
 		plugins: {
-			'@typescript-eslint': typescriptEslint,
-			'@next/next': pluginNext,
+			'@typescript-eslint': tseslint,
 			prettier,
-			cypress: pluginCypress
+			cypress
 		},
-
 		languageOptions: {
 			parser: tsParser
 		},
-
 		rules: {
+			// cy
 			'cypress/unsafe-to-chain-command': 'error',
 			'cypress/no-unnecessary-waiting': 'error',
+
+			// ts
 			'@typescript-eslint/explicit-function-return-type': 'error',
 			'@typescript-eslint/indent': 'off',
-			'array-callback-return': 'warn',
-			'arrow-body-style': ['error', 'always'],
-			curly: 'error',
-			eqeqeq: ['error', 'always'],
-			indent: 'off',
-			'no-case-declarations': 'off',
-			// 'no-console': 'error',
-			'no-unused-vars': 'off',
-			'prefer-arrow-callback': 'error',
-			'no-constant-binary-expression': 'off',
-			'prettier/prettier': [
-				'error',
-				{
-					useTabs: true,
-					tabWidth: 4
-				}
-			],
-			'@typescript-eslint/no-non-null-assertion': 'off',
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{
@@ -78,7 +34,29 @@ export default defineConfig([
 					caughtErrorsIgnorePattern: '^_'
 				}
 			],
-			...pluginNext.configs.recommended.rules
+
+			// prettier
+			'prettier/prettier': ['error', { useTabs: true, tabWidth: 4 }],
+
+			// core
+			'array-callback-return': 'warn',
+			'arrow-body-style': ['error', 'always'],
+			curly: 'error',
+			eqeqeq: ['error', 'always'],
+			indent: 'off',
+			'no-case-declarations': 'off',
+			'no-console': 'error',
+			'no-unused-vars': 'off', // handled by TS rule
+			'prefer-arrow-callback': 'error',
+			'no-constant-binary-expression': 'off'
 		}
-	}
+	},
+
+	globalIgnores([
+		'.next/**',
+		'next-env.d.ts',
+		'**/node_modules',
+		'**/*.js',
+		'**/*.d.ts'
+	])
 ]);

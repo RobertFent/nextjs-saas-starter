@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import { SWRConfig } from 'swr';
 import { JSX } from 'react';
-import { getTeamForUser } from '@/lib/db/queries';
+// import { getTeamForUser } from '@/lib/db/queries';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 // import { getCurrentAppUser } from '@/lib/auth/actions';
@@ -38,7 +38,7 @@ export default function RootLayout({
 								// We do NOT await here
 								// Only components that read this data will suspend
 								// '/api/user': getCurrentAppUser(),
-								'/api/team': getTeamForUser()
+								// '/api/team': getTeamForUser()
 							}
 						}}
 					>

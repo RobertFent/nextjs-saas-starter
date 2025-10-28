@@ -52,6 +52,11 @@ const Header = (): JSX.Element => {
 				</Link>
 				{/* right items */}
 				<div className='flex items-center space-x-4'>
+					<Link href='/' className='flex items-center'>
+						<span className='ml-2 text-xl font-semibold text-gray-900'>
+							Home
+						</span>
+					</Link>
 					<Link href='/pricing' className='flex items-center'>
 						<span className='ml-2 text-xl font-semibold text-gray-900'>
 							Pricing

@@ -12,7 +12,6 @@ import {
 import { JSX, useActionState } from 'react';
 import { removeTeamMember, inviteTeamMember } from '@/lib/actions';
 import useSWR from 'swr';
-import { Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -36,12 +35,11 @@ function SubscriptionSkeleton(): JSX.Element {
 	);
 }
 
-function ManageSubscription(): JSX.Element {
-	const { data: teamData } = useSWR<TeamDataWithMembers>(
-		'/api/team',
-		fetcher
-	);
-
+function ManageSubscription({
+	team
+}: {
+	team: TeamDataWithMembers;
+}): JSX.Element {
 	return (
 		<Card className='mb-8'>
 			<CardHeader>
@@ -52,13 +50,12 @@ function ManageSubscription(): JSX.Element {
 					<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center'>
 						<div className='mb-4 sm:mb-0'>
 							<p className='font-medium'>
-								Current Plan: {teamData?.planName || 'Free'}
+								Current Plan: {team?.planName || 'Free'}
 							</p>
 							<p className='text-sm text-muted-foreground'>
-								{teamData?.subscriptionStatus === 'active'
+								{team?.subscriptionStatus === 'active'
 									? 'Billed monthly'
-									: teamData?.subscriptionStatus ===
-										  'trialing'
+									: team?.subscriptionStatus === 'trialing'
 										? 'Trial period'
 										: 'No active subscription'}
 							</p>
@@ -96,11 +93,7 @@ function TeamMembersSkeleton(): JSX.Element {
 	);
 }
 
-function TeamMembers(): JSX.Element {
-	const { data: teamData } = useSWR<TeamDataWithMembers>(
-		'/api/team',
-		fetcher
-	);
+function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
 	const [removeState, removeAction, isRemovePending] = useActionState<
 		ActionState,
 		FormData
@@ -112,7 +105,7 @@ function TeamMembers(): JSX.Element {
 		return user.name || user.email || 'Unknown User';
 	};
 
-	if (!teamData?.teamMembers?.length) {
+	if (!team?.teamMembers?.length) {
 		return (
 			<Card className='mb-8'>
 				<CardHeader>
@@ -134,7 +127,7 @@ function TeamMembers(): JSX.Element {
 			</CardHeader>
 			<CardContent>
 				<ul className='space-y-4'>
-					{teamData.teamMembers.map((member, index) => {
+					{team.teamMembers.map((member, index) => {
 						return (
 							<li
 								key={member.id}
@@ -201,9 +194,7 @@ function InviteTeamMemberSkeleton(): JSX.Element {
 	);
 }
 
-function InviteTeamMember(): JSX.Element {
-	const { data: user } = useSWR<User>('/api/user', fetcher);
-	const isOwner = user?.role === 'owner';
+function InviteTeamMember({ isOwner }: { isOwner: boolean }): JSX.Element {
 	const [inviteState, inviteAction, isInvitePending] = useActionState<
 		ActionState,
 		FormData
@@ -284,20 +275,32 @@ function InviteTeamMember(): JSX.Element {
 }
 
 export default function SettingsPage(): JSX.Element {
+	const {
+		data: team,
+		isLoading: isLoadingTeam,
+		error: _teamLoadingError
+	} = useSWR<TeamDataWithMembers>('/api/team', fetcher);
+	// todo: api request to define teammembership of current user
 	return (
 		<section className='flex-1 p-4 lg:p-8'>
 			<h1 className='text-lg lg:text-2xl font-medium mb-6'>
 				Team Settings
 			</h1>
-			<Suspense fallback={<SubscriptionSkeleton />}>
-				<ManageSubscription />
-			</Suspense>
-			<Suspense fallback={<TeamMembersSkeleton />}>
-				<TeamMembers />
-			</Suspense>
-			<Suspense fallback={<InviteTeamMemberSkeleton />}>
-				<InviteTeamMember />
-			</Suspense>
+			{isLoadingTeam && (
+				<>
+					<SubscriptionSkeleton />
+					<TeamMembersSkeleton />
+					<InviteTeamMemberSkeleton />
+				</>
+			)}
+			{team && (
+				<>
+					<ManageSubscription team={team} />
+					<TeamMembers team={team} />
+					{/* todo */}
+					<InviteTeamMember isOwner={true} />
+				</>
+			)}
 		</section>
 	);
 }
