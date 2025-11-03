@@ -1,37 +1,33 @@
 import 'server-only';
-import { db } from '@/lib/db/drizzle';
-import { User, users } from '@/lib/db/schema';
+import { User } from '@/lib/db/schema';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { ClerkAPIResponseError } from '@clerk/types';
-import { eq, isNull, and } from 'drizzle-orm';
 import { logger } from '../logger';
 import { formatError } from '../formatters';
+import { getUserByClerkId } from '../db/queries';
 
 const log = logger.child({
 	action: 'auth'
 });
 
 export const getCurrentAppUser = async (): Promise<User> => {
+	const session = await auth();
+	const userId = session.userId;
+	if (!userId) {
+		return session.redirectToSignIn();
+	}
+
+	let user: User | null;
 	try {
-		const session = await auth();
-		const userId = session.userId;
-
-		if (!userId) {
-			return session.redirectToSignIn();
-		}
-
-		const user = await db
-			.select()
-			.from(users)
-			.where(and(eq(users.clerkId, userId), isNull(users.deletedAt)));
-		if (user.length === 0) {
-			session.redirectToSignUp();
-		}
-
-		return user[0];
+		user = await getUserByClerkId(userId);
 	} catch (e) {
 		throw Error(`Error getting current app user: ${formatError(e)}`);
 	}
+	if (!user) {
+		return session.redirectToSignUp();
+	}
+
+	return user;
 };
 
 export const sendInvitation = async (

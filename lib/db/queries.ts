@@ -10,11 +10,25 @@ import {
 	TeamMember,
 	teamMembers,
 	teams,
+	User,
 	users,
 	UserWithTeamId
 } from './schema';
 import { getCurrentAppUser } from '../auth/actions';
 import { logActivity } from '../serverFunctions';
+
+export const getUserByClerkId = async (
+	clerkId: string
+): Promise<User | null> => {
+	const result = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
+		.limit(1);
+
+	// todo: could be more generic
+	return result.length > 0 ? result[0] : null;
+};
 
 export const getTeamByStripeCustomerId = async (
 	customerId: string
