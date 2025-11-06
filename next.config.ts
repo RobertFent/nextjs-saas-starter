@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
 	reactCompiler: true,
+	// cacheComponents: true, // todo: use 'use cache' otherwhere
 	serverExternalPackages: ['pino', 'pino-pretty'],
 	async rewrites() {
 		return [
@@ -15,7 +16,7 @@ const nextConfig: NextConfig = {
 			}
 		];
 	},
-	// This is required to support PostHog trailing slash API requests
+	// this is required to support PostHog trailing slash API requests
 	skipTrailingSlashRedirect: true
 };
 

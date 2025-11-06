@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'; // todo: this is forced dynamic due to a
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActivityLogs } from '@/lib/db/queries';
-import { ActivityType } from '@/lib/db/schema';
+import { ActivityType } from '@/lib/enums';
 import {
 	Settings,
 	LogOut,
@@ -20,7 +20,6 @@ const iconMap: Record<ActivityType, LucideIcon> = {
 	[ActivityType.SIGN_UP]: UserPlus,
 	[ActivityType.SIGN_IN]: UserCog,
 	[ActivityType.SIGN_OUT]: LogOut,
-	[ActivityType.DELETE_ACCOUNT]: UserMinus,
 	[ActivityType.UPDATE_ACCOUNT]: Settings,
 	[ActivityType.CREATE_TEAM]: UserPlus,
 	[ActivityType.REMOVE_TEAM_MEMBER]: UserMinus,
@@ -55,8 +54,6 @@ function formatAction(action: ActivityType): string {
 			return 'You signed in';
 		case ActivityType.SIGN_OUT:
 			return 'You signed out';
-		case ActivityType.DELETE_ACCOUNT:
-			return 'You deleted your account';
 		case ActivityType.UPDATE_ACCOUNT:
 			return 'You updated your account';
 		case ActivityType.CREATE_TEAM:

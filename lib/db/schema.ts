@@ -5,7 +5,7 @@ export const users = pgTable('users', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	clerkId: text('clerk_id'),
 	name: varchar('name', { length: 100 }),
-	email: varchar('email', { length: 255 }).notNull().unique(),
+	email: varchar('email', { length: 255 }).notNull(),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at').notNull().defaultNow(),
 	deletedAt: timestamp('deleted_at')
@@ -13,7 +13,6 @@ export const users = pgTable('users', {
 
 export const teams = pgTable('teams', {
 	id: uuid('id').primaryKey().defaultRandom(),
-	name: varchar('name', { length: 100 }).notNull(),
 	stripeCustomerId: text('stripe_customer_id').unique(),
 	stripeSubscriptionId: text('stripe_subscription_id').unique(),
 	stripeProductId: text('stripe_product_id'),
@@ -102,25 +101,14 @@ export type TeamMember = typeof teamMembers.$inferSelect;
 export type NewTeamMember = typeof teamMembers.$inferInsert;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type NewActivityLog = typeof activityLogs.$inferInsert;
+
 export type TeamDataWithMembers = Team & {
 	teamMembers: (TeamMember & {
-		user: Pick<User, 'id' | 'name' | 'email'>;
+		user: Pick<User, 'id' | 'name' | 'email' | 'clerkId'>;
 	})[];
 };
 export type SanitizedActivityLog = Omit<ActivityLog, 'userId' | 'teamId'>;
 export interface UserWithTeamId {
 	user: User;
 	teamId: string;
-}
-
-export enum ActivityType {
-	SIGN_UP = 'SIGN_UP',
-	SIGN_IN = 'SIGN_IN',
-	SIGN_OUT = 'SIGN_OUT',
-	DELETE_ACCOUNT = 'DELETE_ACCOUNT',
-	UPDATE_ACCOUNT = 'UPDATE_ACCOUNT',
-	CREATE_TEAM = 'CREATE_TEAM',
-	REMOVE_TEAM_MEMBER = 'REMOVE_TEAM_MEMBER',
-	INVITE_TEAM_MEMBER = 'INVITE_TEAM_MEMBER',
-	ACCEPT_INVITATION = 'ACCEPT_INVITATION'
 }

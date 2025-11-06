@@ -1,8 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from 'zod';
 import { getTeamForUser, getUserWithTeam } from '../db/queries';
 import { TeamDataWithMembers, UserWithTeamId } from '../db/schema';
 import { getCurrentAppUser } from './actions';
+import { NextResponse } from 'next/server';
+import { User } from '@/lib/db/schema';
+import { logger } from '../logger';
+import { formatError } from '../formatters';
+
+const log = logger.child({
+	lib: 'auth/middleware'
+});
 
 export interface ActionState {
 	error?: string;
@@ -61,5 +68,42 @@ export function withTeam<T>(action: ActionWithTeamFunction<T>) {
 		}
 
 		return action(formData, team);
+	};
+}
+
+export function withApiAuthAndTryCatch<TArgs extends unknown[], TResponse>(
+	handler: (user: User, ...args: TArgs) => Promise<NextResponse<TResponse>>
+): (...args: TArgs) => Promise<NextResponse<TResponse | { error: string }>> {
+	return async (...args) => {
+		let user: User;
+		try {
+			user = await getCurrentAppUser();
+		} catch (error) {
+			// ignore NEXT_REDIRECT
+			if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+				throw error;
+			}
+			log.error(formatError(error));
+			return NextResponse.json(
+				{
+					error: `Error during retrieval of user data`
+				},
+				{ status: 500 }
+			);
+		}
+
+		try {
+			return await handler(user, ...args);
+		} catch (error) {
+			log.error(formatError(error));
+			return NextResponse.json(
+				{
+					error: 'An unexpected error happened during the API request'
+				},
+				{
+					status: 500
+				}
+			);
+		}
 	};
 }

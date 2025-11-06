@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { and, eq, isNull } from 'drizzle-orm';
 import { validatedActionWithUserAndTeamId } from '@/lib/auth/middleware';
 import { db } from '@/lib/db/drizzle';
-import { ActivityType, users, teamMembers } from '@/lib/db/schema';
+import { users, teamMembers } from '@/lib/db/schema';
 import { logger } from '@/lib/logger';
 import { logActivity } from './serverFunctions';
-import { sendInvitation } from './auth/actions';
+import { deleteUser, sendInvitation } from './auth/actions';
+import { ActivityType, UserRole } from './enums';
 
 const log = logger.child({
 	server: 'action'
@@ -15,7 +16,7 @@ const log = logger.child({
 
 const updateAccountSchema = z.object({
 	name: z.string().min(1, 'Name is required').max(100),
-	email: z.string().email('Invalid email address')
+	email: z.email('Invalid email address')
 });
 
 export const updateAccount = validatedActionWithUserAndTeamId(
@@ -40,38 +41,51 @@ export const updateAccount = validatedActionWithUserAndTeamId(
 );
 
 const removeTeamMemberSchema = z.object({
-	memberId: z.string()
+	memberId: z.string(),
+	clerkId: z.string()
 });
 
 export const removeTeamMember = validatedActionWithUserAndTeamId(
 	removeTeamMemberSchema,
 	async (data, _, userWithTeam) => {
-		const { memberId } = data;
+		const { memberId, clerkId } = data;
 
-		await db
-			.delete(teamMembers)
-			.where(
-				and(
-					eq(teamMembers.id, memberId),
-					eq(teamMembers.teamId, userWithTeam.teamId)
-				)
+		try {
+			await db
+				.update(teamMembers)
+				.set({ deletedAt: new Date() })
+				.where(
+					and(
+						eq(teamMembers.id, memberId),
+						eq(teamMembers.teamId, userWithTeam.teamId)
+					)
+				);
+
+			await logActivity(
+				userWithTeam.teamId,
+				userWithTeam.user.id,
+				ActivityType.REMOVE_TEAM_MEMBER
 			);
 
-		await logActivity(
-			userWithTeam.teamId,
-			userWithTeam.user.id,
-			ActivityType.REMOVE_TEAM_MEMBER
+			await deleteUser(clerkId);
+		} catch (error) {
+			log.error(error);
+			return {
+				error: 'Error during removal of team member and deletion of user'
+			};
+		}
+
+		log.debug(
+			`Team member with member id: ${memberId} and user with clerk id${clerkId} removed`
 		);
 
-		log.debug(`Team member with id: ${memberId} removed`);
-
-		return { success: 'Team member removed successfully' };
+		return { success: 'Team member removed and user deleted successfully' };
 	}
 );
 
 const inviteTeamMemberSchema = z.object({
-	email: z.string().email('Invalid email address'),
-	role: z.enum(['member', 'owner'])
+	email: z.email('Invalid email address'),
+	role: z.enum(UserRole)
 });
 
 export const inviteTeamMember = validatedActionWithUserAndTeamId(

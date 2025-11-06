@@ -3,18 +3,31 @@ import { desc, eq, and, isNull } from 'drizzle-orm';
 import { db } from './drizzle';
 import {
 	activityLogs,
-	ActivityType,
 	SanitizedActivityLog,
 	Team,
 	TeamDataWithMembers,
-	TeamMember,
 	teamMembers,
 	teams,
+	User,
 	users,
 	UserWithTeamId
 } from './schema';
 import { getCurrentAppUser } from '../auth/actions';
 import { logActivity } from '../serverFunctions';
+import { ActivityType, UserRole } from '../enums';
+
+export const getUserByClerkId = async (
+	clerkId: string
+): Promise<User | null> => {
+	const result = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
+		.limit(1);
+
+	// todo: could be more generic
+	return result.length > 0 ? result[0] : null;
+};
 
 export const getTeamByStripeCustomerId = async (
 	customerId: string
@@ -91,17 +104,22 @@ export const getTeamForUser = async (
 	userId: string
 ): Promise<TeamDataWithMembers | null> => {
 	const result = await db.query.teamMembers.findFirst({
-		where: eq(teamMembers.userId, userId),
+		where: and(
+			eq(teamMembers.userId, userId),
+			isNull(teamMembers.deletedAt) // get team by team membership of current user
+		),
 		with: {
 			team: {
 				with: {
 					teamMembers: {
+						where: isNull(teamMembers.deletedAt), // filter out all deleted other team memberships of current team
 						with: {
 							user: {
 								columns: {
 									id: true,
 									name: true,
-									email: true
+									email: true,
+									clerkId: true
 								}
 							}
 						}
@@ -114,50 +132,67 @@ export const getTeamForUser = async (
 	return result?.team || null;
 };
 
-export const createUserWithTeam = async (
+export const createUser = async (
 	clerkId: string,
 	email: string,
 	name: string
-): Promise<TeamMember> => {
-	const [user, team] = await Promise.all([
-		await db
-			.insert(users)
-			.values({
-				clerkId: clerkId,
-				email,
-				name
-			})
-			.returning(),
-		await db.insert(teams).values({ name: 'Team' }).returning()
-	]);
-
-	// todo: use TServerActionError
-	if (user.length < 1 || team.length < 1) {
-		throw Error('Failed creating user or team');
-	}
-
-	const teamMember = await db
-		.insert(teamMembers)
-		.values({ userId: user[0].id, teamId: team[0].id, role: 'owner' })
+): Promise<User> => {
+	const user = await db
+		.insert(users)
+		.values({
+			clerkId: clerkId,
+			email,
+			name
+		})
 		.returning();
 
-	if (teamMember.length < 1) {
+	if (user.length < 1) {
+		throw Error('Failed creating user');
+	}
+
+	return user[0];
+};
+
+export const createTeam = async (): Promise<Team> => {
+	const team = await db.insert(teams).values({}).returning();
+
+	if (team.length < 1) {
+		throw Error('Failed creating team');
+	}
+
+	return team[0];
+};
+
+export const addUserToTeam = async (
+	userId: string,
+	teamId: string,
+	role: UserRole
+): Promise<void> => {
+	const newTeamMember = await db
+		.insert(teamMembers)
+		.values({
+			userId: userId,
+			teamId: teamId,
+			role: role
+		})
+		.returning();
+
+	if (newTeamMember.length < 1) {
 		throw Error('Failed creating team membership for user');
 	}
 
-	return teamMember[0];
+	await logActivity(
+		newTeamMember[0].teamId,
+		newTeamMember[0].userId,
+		ActivityType.SIGN_UP
+	);
 };
 
 export const deleteUserWithTeamMembership = async (
 	clerkId: string
 ): Promise<void> => {
 	const user = await db.query.users.findFirst({
-		where: (users, { eq }) => {
-			return eq(users.clerkId, clerkId);
-		},
-		with: {
-			teamMembers: true
-		}
+		where: and(eq(users.clerkId, clerkId), isNull(users.deletedAt))
 	});
 
 	if (!user) {
@@ -173,7 +208,7 @@ export const deleteUserWithTeamMembership = async (
 		await db
 			.update(users)
 			.set({ deletedAt: new Date() })
-			.where(eq(users.clerkId, clerkId))
+			.where(eq(users.id, user.id))
 			.returning()
 	]);
 
@@ -182,12 +217,6 @@ export const deleteUserWithTeamMembership = async (
 	}
 
 	const deletedTeamMembership = deletedTeamMemberships[0];
-
-	await logActivity(
-		deletedTeamMembership.teamId,
-		deletedTeamMembership.userId,
-		ActivityType.DELETE_ACCOUNT
-	);
 
 	const remainingTeamMembers = await db
 		.select()

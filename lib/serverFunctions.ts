@@ -1,7 +1,8 @@
 import 'server-only';
 import { db } from './db/drizzle';
-import { ActivityType, NewActivityLog, activityLogs } from './db/schema';
+import { NewActivityLog, activityLogs } from './db/schema';
 import { logger } from './logger';
+import { ActivityType } from './enums';
 
 const log = logger.child({
 	server: 'function'

@@ -128,4 +128,9 @@ pnpm dev
 
 ## TODOS
 
-- global error handling wrapper on api routes + snackbar for errors
+- snackbar for errors + maybe use TServerActionResponse
+- dockerfile in case for self hosting
+- toggle posthog maybe
+- structure in landing page (/dasboard atm) and app (should be /saas or whatever)
+- add docs for posthog and clerk here
+-
