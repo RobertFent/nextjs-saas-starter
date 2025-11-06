@@ -2,13 +2,15 @@ import { Webhook } from 'svix';
 import { NextResponse } from 'next/server';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import {
-	createUserWithTeam,
+	addUserToTeam,
+	createTeam,
+	createUser,
 	deleteUserWithTeamMembership
 } from '@/lib/db/queries';
 import { logger } from '@/lib/logger';
-import { logActivity } from '@/lib/serverFunctions';
-import { ActivityType } from '@/lib/db/schema';
 import { formatError } from '@/lib/formatters';
+import { ActivityType, UserRole } from '@/lib/enums';
+import { logActivity } from '@/lib/serverFunctions';
 
 const log = logger.child({
 	api: 'webhooks/clerk'
@@ -46,18 +48,32 @@ export async function POST(request: Request): Promise<Response> {
 	const type = event.type;
 	log.debug(type);
 
-	// todo: invitation results in user.created
+	// todo: clean code
 	if (type === 'user.created') {
 		const data = event.data;
-		const { id, email_addresses, first_name, last_name } = data;
-		const email = email_addresses?.[0]?.email_address;
+		const { id, email_addresses, first_name, last_name, public_metadata } =
+			data;
+		const email = email_addresses[0]?.email_address;
 		const name = `${first_name ?? ''} ${last_name ?? ''}`.trim();
-		const teamMember = await createUserWithTeam(id, email, name);
-		await logActivity(
-			teamMember.teamId,
-			teamMember.userId,
-			ActivityType.SIGN_UP
-		);
+
+		// create user in any case
+		const user = await createUser(id, email, name);
+
+		let teamId: string, role: UserRole;
+		if ('teamId' in public_metadata && 'role' in public_metadata) {
+			// reuse public teamId and role
+			teamId = public_metadata.teamId as string;
+			role = public_metadata.role as UserRole;
+			await logActivity(teamId, user.id, ActivityType.ACCEPT_INVITATION);
+		} else {
+			// create new team by default
+			const newTeam = await createTeam();
+			teamId = newTeam.id;
+			role = UserRole.OWNER;
+		}
+
+		// add user in any case to new team or existing team
+		await addUserToTeam(user.id, teamId, role);
 	} else if (type === 'user.deleted') {
 		const data = event.data;
 		const { id } = data;

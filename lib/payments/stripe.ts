@@ -7,26 +7,26 @@ import {
 import { Team } from '../db/schema';
 import { StripePrice, StripeProduct } from '../definitions/stripe';
 import { getCurrentAppUser } from '../auth/actions';
+import { logger } from '../logger';
+
+const log = logger.child({
+	lib: 'stripe'
+});
 
 // connect to stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	apiVersion: '2025-04-30.basil'
 });
 
+// todo: pass user or user id as arg
 export async function createCheckoutSession({
 	team,
 	priceId
 }: {
-	team: Team | null;
+	team: Team;
 	priceId: string;
 }): Promise<void> {
-	// todo: put app user in guard maybe
 	const user = await getCurrentAppUser();
-
-	// todo: this enpoint does not exist anymore -> use session like in user; maybe join team and user
-	if (!team) {
-		redirect(`/sign-up?redirect=checkout&priceId=${priceId}`);
-	}
 
 	const session = await stripe.checkout.sessions.create({
 		payment_method_types: ['card'],
@@ -136,7 +136,7 @@ export const handleSubscriptionChange = async (
 	const team = await getTeamByStripeCustomerId(customerId);
 
 	if (!team) {
-		console.error('Team not found for Stripe customer:', customerId);
+		log.error(`Team not found for Stripe customer: ${customerId}`);
 		return;
 	}
 

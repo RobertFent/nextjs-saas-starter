@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { exec } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { promisify } from 'node:util';

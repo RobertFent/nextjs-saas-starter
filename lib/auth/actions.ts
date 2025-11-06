@@ -39,7 +39,6 @@ export const sendInvitation = async (
 		const client = await clerkClient();
 		await client.invitations.createInvitation({
 			emailAddress: email,
-			redirectUrl: `${process.env.BASE_URL}/dashboard`, // todo: check how to login with new user on correct page and wait in webhook for creation
 			publicMetadata: {
 				teamId: teamId,
 				role: role
@@ -51,5 +50,18 @@ export const sendInvitation = async (
 			(e as ClerkAPIResponseError)?.errors?.[0]?.longMessage ??
 			formatError(e);
 		throw Error(`Error sending clerk invitation: ${message}`);
+	}
+};
+
+export const deleteUser = async (clerkId: string): Promise<void> => {
+	try {
+		const client = await clerkClient();
+		await client.users.deleteUser(clerkId);
+		log.debug(`User with clerkId: ${clerkId} deleted`);
+	} catch (e) {
+		const message =
+			(e as ClerkAPIResponseError)?.errors?.[0]?.longMessage ??
+			formatError(e);
+		throw Error(`Error deleting clerk user: ${message}`);
 	}
 };

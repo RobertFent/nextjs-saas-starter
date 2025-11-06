@@ -9,9 +9,9 @@ import {
 	CardTitle,
 	CardFooter
 } from '@/components/ui/card';
-import { JSX, useActionState } from 'react';
+import { JSX, useActionState, useEffect, useState } from 'react';
 import { removeTeamMember, inviteTeamMember } from '@/lib/actions';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { Loader2, PlusCircle } from 'lucide-react';
 import { TeamDataWithMembers, User } from '@/lib/db/schema';
 import { customerPortalAction } from '@/lib/payments/actions';
 import { fetcher } from '@/lib/utils';
+import { UserRole } from '@/lib/enums';
 
 interface ActionState {
 	error?: string;
@@ -93,11 +94,26 @@ function TeamMembersSkeleton(): JSX.Element {
 	);
 }
 
-function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
+function TeamMembers({
+	team,
+	currentUserId,
+	isOwner
+}: {
+	team: TeamDataWithMembers;
+	currentUserId: string;
+	isOwner: boolean;
+}): JSX.Element {
 	const [removeState, removeAction, isRemovePending] = useActionState<
 		ActionState,
 		FormData
 	>(removeTeamMember, {});
+	const { mutate } = useSWRConfig();
+
+	useEffect(() => {
+		if (removeState.success) {
+			mutate('/api/team'); // revalidate SWR cache after successful deletion
+		}
+	}, [mutate, removeState]);
 
 	const getUserDisplayName = (
 		user: Pick<User, 'id' | 'name' | 'email'>
@@ -105,7 +121,7 @@ function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
 		return user.name || user.email || 'Unknown User';
 	};
 
-	if (!team?.teamMembers?.length) {
+	if (!team.teamMembers.length) {
 		return (
 			<Card className='mb-8'>
 				<CardHeader>
@@ -127,7 +143,8 @@ function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
 			</CardHeader>
 			<CardContent>
 				<ul className='space-y-4'>
-					{team.teamMembers.map((member, index) => {
+					{team.teamMembers.map((member) => {
+						const isCurrentUser = member.userId === currentUserId;
 						return (
 							<li
 								key={member.id}
@@ -144,7 +161,13 @@ function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
 												.join('')}
 										</AvatarFallback>
 									</Avatar>
-									<div>
+									<div
+										className={
+											isCurrentUser
+												? 'text-orange-500'
+												: ''
+										}
+									>
 										<p className='font-medium'>
 											{getUserDisplayName(member.user)}
 										</p>
@@ -153,25 +176,35 @@ function TeamMembers({ team }: { team: TeamDataWithMembers }): JSX.Element {
 										</p>
 									</div>
 								</div>
-								{index > 1 ? (
-									<form action={removeAction}>
-										<input
-											type='hidden'
-											name='memberId'
-											value={member.id}
-										/>
-										<Button
-											type='submit'
-											variant='outline'
-											size='sm'
-											disabled={isRemovePending}
-										>
-											{isRemovePending
-												? 'Removing...'
-												: 'Remove'}
-										</Button>
-									</form>
-								) : null}
+								{/* only allow removing as owner and only the role member */}
+								{isOwner &&
+									member.userId !== currentUserId &&
+									member.role === UserRole.MEMBER && (
+										<form action={removeAction}>
+											<input
+												type='hidden'
+												name='memberId'
+												value={member.id}
+											/>
+											<input
+												type='hidden'
+												name='clerkId'
+												value={
+													member.user.clerkId ?? ''
+												}
+											/>
+											<Button
+												type='submit'
+												variant='outline'
+												size='sm'
+												disabled={isRemovePending}
+											>
+												{isRemovePending
+													? 'Removing...'
+													: 'Remove'}
+											</Button>
+										</form>
+									)}
 							</li>
 						);
 					})}
@@ -230,11 +263,13 @@ function InviteTeamMember({ isOwner }: { isOwner: boolean }): JSX.Element {
 						>
 							<div className='flex items-center space-x-2 mt-2'>
 								<RadioGroupItem value='member' id='member' />
-								<Label htmlFor='member'>Member</Label>
+								<Label htmlFor='member'>
+									{UserRole.MEMBER}
+								</Label>
 							</div>
 							<div className='flex items-center space-x-2 mt-2'>
 								<RadioGroupItem value='owner' id='owner' />
-								<Label htmlFor='owner'>Owner</Label>
+								<Label htmlFor='owner'>{UserRole.OWNER}</Label>
 							</div>
 						</RadioGroup>
 					</div>
@@ -278,27 +313,55 @@ export default function SettingsPage(): JSX.Element {
 	const {
 		data: team,
 		isLoading: isLoadingTeam,
-		error: _teamLoadingError
+		error: teamLoadingError
 	} = useSWR<TeamDataWithMembers>('/api/team', fetcher);
-	// todo: api request to define teammembership of current user
+	const {
+		data: user,
+		isLoading: isLoadingUser,
+		error: userLoadingError
+	} = useSWR<User>('/api/user', fetcher);
+	const [isOwner, setIsOwner] = useState(false);
+
+	useEffect(() => {
+		if (team && user) {
+			const teamMemberShip = team.teamMembers.find((teamMember) => {
+				return teamMember.userId === user.id;
+			});
+			// eslint-disable-next-line react-hooks/set-state-in-effect
+			setIsOwner(teamMemberShip?.role === UserRole.OWNER);
+		}
+	}, [team, user]);
+
+	useEffect(() => {
+		if (teamLoadingError) {
+			throw Error(teamLoadingError);
+		}
+		if (userLoadingError) {
+			throw Error(userLoadingError);
+		}
+	}, [teamLoadingError, userLoadingError]);
+
 	return (
 		<section className='flex-1 p-4 lg:p-8'>
 			<h1 className='text-lg lg:text-2xl font-medium mb-6'>
 				Team Settings
 			</h1>
-			{isLoadingTeam && (
+			{(isLoadingTeam || isLoadingUser) && (
 				<>
 					<SubscriptionSkeleton />
 					<TeamMembersSkeleton />
 					<InviteTeamMemberSkeleton />
 				</>
 			)}
-			{team && (
+			{team && user && (
 				<>
 					<ManageSubscription team={team} />
-					<TeamMembers team={team} />
-					{/* todo */}
-					<InviteTeamMember isOwner={true} />
+					<TeamMembers
+						team={team}
+						currentUserId={user.id}
+						isOwner={isOwner}
+					/>
+					<InviteTeamMember isOwner={isOwner} />
 				</>
 			)}
 		</section>
