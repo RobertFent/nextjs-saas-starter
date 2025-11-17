@@ -30,6 +30,11 @@ const UserMenu = (): JSX.Element => {
 				</SignedOut>
 
 				<SignedIn>
+					<Link href='/dashboard' className='flex items-center'>
+						<span className='ml-2 text-xl font-semibold text-gray-900'>
+							Dashboard
+						</span>
+					</Link>
 					<UserButton />
 				</SignedIn>
 			</ClerkLoaded>
@@ -58,11 +63,6 @@ const Header = (): JSX.Element => {
 					<Link href='/pricing' className='flex items-center'>
 						<span className='ml-2 text-xl font-semibold text-gray-900'>
 							Pricing
-						</span>
-					</Link>
-					<Link href='/dashboard' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
-							Dashboard
 						</span>
 					</Link>
 					<UserMenu />
