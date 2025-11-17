@@ -30,9 +30,9 @@ const UserMenu = (): JSX.Element => {
 				</SignedOut>
 
 				<SignedIn>
-					<Link href='/dashboard' className='flex items-center'>
+					<Link href='/saas' className='flex items-center'>
 						<span className='ml-2 text-xl font-semibold text-gray-900'>
-							Dashboard
+							Application
 						</span>
 					</Link>
 					<UserButton />
@@ -65,6 +65,11 @@ const Header = (): JSX.Element => {
 							Pricing
 						</span>
 					</Link>
+					<Link href='/blog' className='flex items-center'>
+						<span className='ml-2 text-xl font-semibold text-gray-900'>
+							Blog
+						</span>
+					</Link>
 					<UserMenu />
 				</div>
 			</div>
@@ -72,7 +77,7 @@ const Header = (): JSX.Element => {
 	);
 };
 
-export default function Layout({
+export default function LandingLayout({
 	children
 }: {
 	children: React.ReactNode;

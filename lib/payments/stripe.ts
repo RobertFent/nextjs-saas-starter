@@ -121,7 +121,7 @@ export async function createCustomerPortalSession(
 
 	return stripe.billingPortal.sessions.create({
 		customer: team.stripeCustomerId,
-		return_url: `${process.env.BASE_URL}/dashboard`,
+		return_url: `${process.env.BASE_URL}/saas/dashboard`,
 		configuration: configuration.id
 	});
 }

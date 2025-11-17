@@ -15,11 +15,8 @@ export default function DashboardLayout({
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 	const navItems = [
-		{ href: '/dashboard', icon: Users, label: 'Team' },
-		// todo: remove this page but keep it for now for reference how to use forms
-		// { href: '/dashboard/general', icon: Settings, label: 'General' },
-		{ href: '/dashboard/activity', icon: Activity, label: 'Activity' }
-		// { href: '/dashboard/security', icon: Shield, label: 'Security' }
+		{ href: '/saas', icon: Users, label: 'Team' },
+		{ href: '/saas/dashboard/activity', icon: Activity, label: 'Activity' }
 	];
 
 	return (
