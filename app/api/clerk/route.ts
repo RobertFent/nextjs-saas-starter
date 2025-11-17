@@ -67,7 +67,7 @@ export async function POST(request: Request): Promise<Response> {
 			await logActivity(teamId, user.id, ActivityType.ACCEPT_INVITATION);
 		} else {
 			// create new team by default
-			const newTeam = await createTeam();
+			const newTeam = await createTeam(user.id);
 			teamId = newTeam.id;
 			role = UserRole.OWNER;
 		}

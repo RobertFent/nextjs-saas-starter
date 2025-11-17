@@ -7,8 +7,10 @@ import { db } from '@/lib/db/drizzle';
 import { users, teamMembers } from '@/lib/db/schema';
 import { logger } from '@/lib/logger';
 import { logActivity } from './serverFunctions';
-import { deleteUser, sendInvitation } from './auth/actions';
+import { sendInvitation } from './auth/actions';
 import { ActivityType, UserRole } from './enums';
+import { addUserToTeam, createTeam, deleteTeamMember } from './db/queries';
+import { formatError } from './formatters';
 
 const log = logger.child({
 	server: 'action'
@@ -42,24 +44,16 @@ export const updateAccount = validatedActionWithUserAndTeamId(
 
 const removeTeamMemberSchema = z.object({
 	memberId: z.string(),
-	clerkId: z.string()
+	userId: z.string()
 });
 
 export const removeTeamMember = validatedActionWithUserAndTeamId(
 	removeTeamMemberSchema,
 	async (data, _, userWithTeam) => {
-		const { memberId, clerkId } = data;
+		const { memberId, userId } = data;
 
 		try {
-			await db
-				.update(teamMembers)
-				.set({ deletedAt: new Date() })
-				.where(
-					and(
-						eq(teamMembers.id, memberId),
-						eq(teamMembers.teamId, userWithTeam.teamId)
-					)
-				);
+			await deleteTeamMember(memberId);
 
 			await logActivity(
 				userWithTeam.teamId,
@@ -67,7 +61,9 @@ export const removeTeamMember = validatedActionWithUserAndTeamId(
 				ActivityType.REMOVE_TEAM_MEMBER
 			);
 
-			await deleteUser(clerkId);
+			// create new default team for removed user
+			const newTeam = await createTeam(userId);
+			await addUserToTeam(userId, newTeam.id, UserRole.OWNER);
 		} catch (error) {
 			log.error(error);
 			return {
@@ -76,10 +72,10 @@ export const removeTeamMember = validatedActionWithUserAndTeamId(
 		}
 
 		log.debug(
-			`Team member with member id: ${memberId} and user with clerk id${clerkId} removed`
+			`Team member with member id: ${memberId} removed; Create new team for this user`
 		);
 
-		return { success: 'Team member removed and user deleted successfully' };
+		return { success: 'Team member removed' };
 	}
 );
 
@@ -111,8 +107,13 @@ export const inviteTeamMember = validatedActionWithUserAndTeamId(
 			return { error: 'User is already a member of this team' };
 		}
 
-		// Create a new invitation
-		await sendInvitation(email, userWithTeam.teamId, role);
+		// create a new clerk invitation
+		try {
+			await sendInvitation(email, userWithTeam.teamId, role);
+		} catch (error) {
+			log.error(formatError(error));
+			return { error: 'User is already existing' };
+		}
 
 		await logActivity(
 			userWithTeam.teamId,

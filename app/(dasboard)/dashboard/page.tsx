@@ -136,6 +136,14 @@ function TeamMembers({
 		);
 	}
 
+	const ownerIds = team.teamMembers
+		.filter((member) => {
+			return member.role === UserRole.OWNER;
+		})
+		.map((owner) => {
+			return owner.userId;
+		});
+
 	return (
 		<Card className='mb-8'>
 			<CardHeader>
@@ -144,7 +152,24 @@ function TeamMembers({
 			<CardContent>
 				<ul className='space-y-4'>
 					{team.teamMembers.map((member) => {
-						const isCurrentUser = member.userId === currentUserId;
+						// current user may only leave if not last owner and not last team member
+						const isCurrentMemberUser =
+							member.userId === currentUserId;
+						const isCurrentMemberOwner = ownerIds.includes(
+							member.userId
+						);
+						const isCurrentMemberLastOwner =
+							isCurrentMemberOwner && ownerIds.length === 1;
+						const isCurrentMemberAllowedToLeave =
+							isCurrentMemberUser &&
+							team.teamMembers.length > 1 &&
+							!isCurrentMemberLastOwner;
+
+						// only allow removing as owner and only the role member or leave as current user
+						const isMemberRemoveable =
+							isOwner &&
+							member.userId !== currentUserId &&
+							member.role === UserRole.MEMBER;
 						return (
 							<li
 								key={member.id}
@@ -163,7 +188,7 @@ function TeamMembers({
 									</Avatar>
 									<div
 										className={
-											isCurrentUser
+											isCurrentMemberUser
 												? 'text-orange-500'
 												: ''
 										}
@@ -176,40 +201,43 @@ function TeamMembers({
 										</p>
 									</div>
 								</div>
-								{/* only allow removing as owner and only the role member */}
-								{isOwner &&
-									member.userId !== currentUserId &&
-									member.role === UserRole.MEMBER && (
-										<form action={removeAction}>
-											<input
-												type='hidden'
-												name='memberId'
-												value={member.id}
-											/>
-											<input
-												type='hidden'
-												name='clerkId'
-												value={
-													member.user.clerkId ?? ''
-												}
-											/>
-											<Button
-												type='submit'
-												variant='outline'
-												size='sm'
-												disabled={isRemovePending}
-											>
-												{isRemovePending
-													? 'Removing...'
-													: 'Remove'}
-											</Button>
-										</form>
-									)}
+
+								{(isMemberRemoveable ||
+									isCurrentMemberAllowedToLeave) && (
+									<form action={removeAction}>
+										<input
+											type='hidden'
+											name='memberId'
+											value={member.id}
+										/>
+										<input
+											type='hidden'
+											name='userId'
+											value={member.userId}
+										/>
+										<Button
+											type='submit'
+											variant='outline'
+											size='sm'
+											disabled={isRemovePending}
+										>
+											{isRemovePending &&
+											!isCurrentMemberUser
+												? 'Removing...'
+												: isRemovePending &&
+													  isCurrentMemberUser
+													? 'Leaving...'
+													: isCurrentMemberUser
+														? 'Leave'
+														: 'Remove'}
+										</Button>
+									</form>
+								)}
 							</li>
 						);
 					})}
 				</ul>
-				{removeState?.error && (
+				{removeState.error && (
 					<p className='text-red-500 mt-4'>{removeState.error}</p>
 				)}
 			</CardContent>

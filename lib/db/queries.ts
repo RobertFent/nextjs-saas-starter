@@ -153,14 +153,18 @@ export const createUser = async (
 	return user[0];
 };
 
-export const createTeam = async (): Promise<Team> => {
+export const createTeam = async (userId: string): Promise<Team> => {
 	const team = await db.insert(teams).values({}).returning();
 
 	if (team.length < 1) {
 		throw Error('Failed creating team');
 	}
 
-	return team[0];
+	const newTeam = team[0];
+
+	await logActivity(newTeam.id, userId, ActivityType.CREATE_TEAM);
+
+	return newTeam;
 };
 
 export const addUserToTeam = async (
@@ -186,6 +190,13 @@ export const addUserToTeam = async (
 		newTeamMember[0].userId,
 		ActivityType.SIGN_UP
 	);
+};
+
+export const deleteTeamMember = async (teamMemberId: string): Promise<void> => {
+	await db
+		.update(teamMembers)
+		.set({ deletedAt: new Date() })
+		.where(and(eq(teamMembers.id, teamMemberId)));
 };
 
 export const deleteUserWithTeamMembership = async (
