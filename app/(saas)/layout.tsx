@@ -35,7 +35,7 @@ const Header = (): JSX.Element => {
 	);
 };
 
-export default function LandinLayout({
+export default function SaaSLayout({
 	children
 }: {
 	children: React.ReactNode;

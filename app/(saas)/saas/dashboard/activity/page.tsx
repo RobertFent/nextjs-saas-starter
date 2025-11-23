@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'; // todo: this is forced dynamic due to auth workflow -> verify if there is a better approach
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActivityLogs } from '@/lib/db/queries';
 import { ActivityType } from '@/lib/enums';
