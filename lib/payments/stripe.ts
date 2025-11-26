@@ -7,6 +7,7 @@ import {
 import { UserWithTeam } from '../db/schema';
 import { StripePrice, StripeProduct } from '../definitions/stripe';
 import { logger } from '../logger';
+import { UserRole } from '../enums';
 
 const log = logger.child({
 	lib: 'stripe'
@@ -54,6 +55,14 @@ export async function createCustomerPortalSession(
 		!userWithTeam.team.stripeProductId
 	) {
 		redirect('/pricing');
+	}
+
+	// get role of current user in team and verify if is owner
+	const membership = userWithTeam.team.teamMembers.find((members) => {
+		return members.userId === userWithTeam.id;
+	});
+	if (membership?.role !== UserRole.OWNER) {
+		throw Error('User not authorized');
 	}
 
 	let configuration: Stripe.BillingPortal.Configuration;

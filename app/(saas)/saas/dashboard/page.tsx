@@ -37,9 +37,11 @@ function SubscriptionSkeleton(): JSX.Element {
 }
 
 function ManageSubscription({
-	team
+	team,
+	isOwner
 }: {
 	team: TeamDataWithMembers;
+	isOwner: boolean;
 }): JSX.Element {
 	return (
 		<Card className='mb-8'>
@@ -51,21 +53,23 @@ function ManageSubscription({
 					<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center'>
 						<div className='mb-4 sm:mb-0'>
 							<p className='font-medium'>
-								Current Plan: {team?.planName || 'Free'}
+								Current Plan: {team.planName}
 							</p>
 							<p className='text-sm text-muted-foreground'>
-								{team?.subscriptionStatus === 'active'
+								{team.subscriptionStatus === 'active'
 									? 'Billed monthly'
 									: team?.subscriptionStatus === 'trialing'
 										? 'Trial period'
 										: 'No active subscription'}
 							</p>
 						</div>
-						<form action={customerPortalAction}>
-							<Button type='submit' variant='outline'>
-								Manage Subscription
-							</Button>
-						</form>
+						{isOwner && (
+							<form action={customerPortalAction}>
+								<Button type='submit' variant='outline'>
+									Manage Subscription
+								</Button>
+							</form>
+						)}
 					</div>
 				</div>
 			</CardContent>
@@ -383,7 +387,7 @@ export default function SettingsPage(): JSX.Element {
 			)}
 			{team && user && (
 				<>
-					<ManageSubscription team={team} />
+					<ManageSubscription team={team} isOwner={isOwner} />
 					<TeamMembers
 						team={team}
 						currentUserId={user.id}
