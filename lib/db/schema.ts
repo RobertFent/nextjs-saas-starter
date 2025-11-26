@@ -102,6 +102,8 @@ export type NewTeamMember = typeof teamMembers.$inferInsert;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type NewActivityLog = typeof activityLogs.$inferInsert;
 
+export type UserWithTeam = User & { team: TeamDataWithMembers };
+
 export type TeamDataWithMembers = Team & {
 	teamMembers: (TeamMember & {
 		user: Pick<User, 'id' | 'name' | 'email' | 'clerkId'>;

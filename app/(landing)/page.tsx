@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CreditCard, Database } from 'lucide-react';
+import {
+	ArrowRight,
+	CreditCard,
+	Database,
+	UserCheck,
+	ChartArea
+} from 'lucide-react';
 import { Terminal } from './terminal';
 import { JSX } from 'react';
 
@@ -21,21 +27,6 @@ export default function HomePage(): JSX.Element {
 								powerful, ready-to-use template. Packed with
 								modern technologies and essential integrations.
 							</p>
-							<div className='mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0'>
-								<a
-									href='https://vercel.com/templates/next.js/next-js-saas-starter'
-									target='_blank'
-								>
-									<Button
-										size='lg'
-										variant='outline'
-										className='text-lg rounded-full'
-									>
-										Deploy your own
-										<ArrowRight className='ml-2 h-5 w-5' />
-									</Button>
-								</a>
-							</div>
 						</div>
 						<div className='mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center'>
 							<Terminal />
@@ -99,6 +90,38 @@ export default function HomePage(): JSX.Element {
 								</p>
 							</div>
 						</div>
+
+						<div className='mt-10 lg:mt-0'>
+							<div className='flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white'>
+								<UserCheck className='h-6 w-6' />
+							</div>
+							<div className='mt-5'>
+								<h2 className='text-lg font-medium text-gray-900'>
+									Clerk Integration
+								</h2>
+								<p className='mt-2 text-base text-gray-500'>
+									Secure and streamlined user authentication
+									with Clerk`s modern identity management
+									platform.
+								</p>
+							</div>
+						</div>
+
+						<div className='mt-10 lg:mt-0'>
+							<div className='flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white'>
+								<ChartArea className='h-6 w-6' />
+							</div>
+							<div className='mt-5'>
+								<h2 className='text-lg font-medium text-gray-900'>
+									PostHog Integration
+								</h2>
+								<p className='mt-2 text-base text-gray-500'>
+									Powerful product analytics and event
+									tracking to help you understand user
+									behavior and optimize your application.
+								</p>
+							</div>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -111,13 +134,13 @@ export default function HomePage(): JSX.Element {
 								Ready to launch your SaaS?
 							</h2>
 							<p className='mt-3 max-w-3xl text-lg text-gray-500'>
-								Our template provides everything you need to get
-								your SaaS up and running quickly. Don&apos;t
-								waste time on boilerplate - focus on what makes
-								your product unique.
+								This template is forked from the Vercel SaaS
+								Starter, with added Clerk and PostHog
+								integrations, plus an improved landing page and
+								refined SaaS architecture.
 							</p>
 						</div>
-						<div className='mt-8 lg:mt-0 flex justify-center lg:justify-end'>
+						<div className='mt-8 ml-10 lg:mt-0 flex flex-col gap-5 items-end'>
 							<a
 								href='https://github.com/nextjs/saas-starter'
 								target='_blank'
@@ -127,7 +150,20 @@ export default function HomePage(): JSX.Element {
 									variant='outline'
 									className='text-lg rounded-full'
 								>
-									View the code
+									View the original code from Vercel
+									<ArrowRight className='ml-3 h-6 w-6' />
+								</Button>
+							</a>
+							<a
+								href='https://github.com/RobertFent/nextjs-saas-starter'
+								target='_blank'
+							>
+								<Button
+									size='lg'
+									variant='outline'
+									className='text-lg rounded-full'
+								>
+									View this code
 									<ArrowRight className='ml-3 h-6 w-6' />
 								</Button>
 							</a>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getTeamForUser, getUserWithTeam } from '../db/queries';
-import { TeamDataWithMembers, UserWithTeamId } from '../db/schema';
+import { UserWithTeam, UserWithTeamId } from '../db/schema';
 import { getCurrentAppUser } from './actions';
 import { NextResponse } from 'next/server';
 import { User } from '@/lib/db/schema';
@@ -54,12 +54,12 @@ export const validatedActionWithUserAndTeamId = <
 	};
 };
 
-type ActionWithTeamFunction<T> = (
+type ActionWithUserAndTeamFunction<T> = (
 	formData: FormData,
-	team: TeamDataWithMembers
+	team: UserWithTeam
 ) => Promise<T>;
 
-export function withTeam<T>(action: ActionWithTeamFunction<T>) {
+export function withUserAndTeam<T>(action: ActionWithUserAndTeamFunction<T>) {
 	return async (formData: FormData): Promise<T> => {
 		const user = await getCurrentAppUser();
 		const team = await getTeamForUser(user.id);
@@ -67,7 +67,9 @@ export function withTeam<T>(action: ActionWithTeamFunction<T>) {
 			throw new Error('Team not found');
 		}
 
-		return action(formData, team);
+		const userWithTeam = { ...user, team: team };
+
+		return action(formData, userWithTeam);
 	};
 }
 

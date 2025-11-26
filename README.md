@@ -92,6 +92,15 @@ When you're ready to deploy your SaaS application to production, follow these st
 2. Set the endpoint URL to your production API route (e.g., `https://yourdomain.com/api/stripe/webhook`).
 3. Select the events you want to listen for (e.g., `checkout.session.completed`, `customer.subscription.updated`).
 
+### Set up a production Clerk webhook
+
+1. Go to the Clerk Dashboard and create a new webhook for your production environment > `configure` > `Webhooks`.
+2. Set the endpoint URL to your production API route (e.g., `https://yourdomain.com/api/clerk/webhook`).
+
+### Set up Posthog
+
+1. Go to `https://eu.posthog.com/` and follow next.js set up.
+
 ### Deploy to Vercel
 
 1. Push your code to a GitHub repository.
@@ -107,6 +116,11 @@ In your Vercel project settings (or during deployment), add all the necessary en
 3. `STRIPE_WEBHOOK_SECRET`: Use the webhook secret from the production webhook you created in step 1.
 4. `POSTGRES_URL`: Set this to your production database URL.
 5. `AUTH_SECRET`: Set this to a random string. `openssl rand -base64 32` will generate one.
+6. `CLERK_SECRET_KEY`: Use your Clerk secret key for the production environment.
+7. `CLERK_WEBHOOK_SECRET`: Use your Clerk webhook secret for the production environment.
+8. `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Use your Clerk publishable key for the production environment.
+9. `NEXT_PUBLIC_POSTHOG_HOST`: Use your posthog host for the production environment.
+10. `NEXT_PUBLIC_POSTHOG_KEY`: Use your posthog key for the production environment.
 
 ## Additional Setup
 
@@ -125,12 +139,3 @@ launch in dev mode
 ```sh
 pnpm dev
 ```
-
-## TODOS
-
-- snackbar for errors + maybe use TServerActionResponse
-- dockerfile in case for self hosting
-- toggle posthog maybe
-- structure in landing page (/dasboard atm) and app (should be /saas or whatever)
-- add docs for posthog and clerk here
--

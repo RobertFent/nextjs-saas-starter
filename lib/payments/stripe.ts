@@ -4,10 +4,10 @@ import {
 	getTeamByStripeCustomerId,
 	updateTeamSubscription
 } from '../db/queries';
-import { Team } from '../db/schema';
+import { UserWithTeam } from '../db/schema';
 import { StripePrice, StripeProduct } from '../definitions/stripe';
-import { getCurrentAppUser } from '../auth/actions';
 import { logger } from '../logger';
+import { UserRole } from '../enums';
 
 const log = logger.child({
 	lib: 'stripe'
@@ -18,16 +18,13 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	apiVersion: '2025-04-30.basil'
 });
 
-// todo: pass user or user id as arg
 export async function createCheckoutSession({
-	team,
+	userWithTeam,
 	priceId
 }: {
-	team: Team;
+	userWithTeam: UserWithTeam;
 	priceId: string;
 }): Promise<void> {
-	const user = await getCurrentAppUser();
-
 	const session = await stripe.checkout.sessions.create({
 		payment_method_types: ['card'],
 		line_items: [
@@ -39,8 +36,8 @@ export async function createCheckoutSession({
 		mode: 'subscription',
 		success_url: `${process.env.BASE_URL}/api/stripe/checkout?session_id={CHECKOUT_SESSION_ID}`,
 		cancel_url: `${process.env.BASE_URL}/pricing`,
-		customer: team.stripeCustomerId || undefined,
-		client_reference_id: user.id.toString(),
+		customer: userWithTeam.team.stripeCustomerId || undefined,
+		client_reference_id: userWithTeam.id.toString(),
 		allow_promotion_codes: true,
 		subscription_data: {
 			trial_period_days: 14
@@ -51,10 +48,21 @@ export async function createCheckoutSession({
 }
 
 export async function createCustomerPortalSession(
-	team: Team
+	userWithTeam: UserWithTeam
 ): Promise<Stripe.Response<Stripe.BillingPortal.Session>> {
-	if (!team.stripeCustomerId || !team.stripeProductId) {
+	if (
+		!userWithTeam.team.stripeCustomerId ||
+		!userWithTeam.team.stripeProductId
+	) {
 		redirect('/pricing');
+	}
+
+	// get role of current user in team and verify if is owner
+	const membership = userWithTeam.team.teamMembers.find((members) => {
+		return members.userId === userWithTeam.id;
+	});
+	if (membership?.role !== UserRole.OWNER) {
+		throw Error('User not authorized');
 	}
 
 	let configuration: Stripe.BillingPortal.Configuration;
@@ -63,7 +71,9 @@ export async function createCustomerPortalSession(
 	if (configurations.data.length > 0) {
 		configuration = configurations.data[0];
 	} else {
-		const product = await stripe.products.retrieve(team.stripeProductId);
+		const product = await stripe.products.retrieve(
+			userWithTeam.team.stripeProductId
+		);
 		if (!product.active) {
 			throw new Error("Team's product is not active in Stripe");
 		}
@@ -120,8 +130,8 @@ export async function createCustomerPortalSession(
 	}
 
 	return stripe.billingPortal.sessions.create({
-		customer: team.stripeCustomerId,
-		return_url: `${process.env.BASE_URL}/dashboard`,
+		customer: userWithTeam.team.stripeCustomerId,
+		return_url: `${process.env.BASE_URL}/saas/dashboard`,
 		configuration: configuration.id
 	});
 }

@@ -105,7 +105,9 @@ export const GET = withApiAuthAndTryCatch<[NextRequest], unknown>(
 				})
 				.where(eq(teams.id, userTeam[0].teamId));
 
-			return NextResponse.redirect(new URL('/dashboard', request.url));
+			return NextResponse.redirect(
+				new URL('/saas/dashboard', request.url)
+			);
 		} catch (error) {
 			log.error(`Error during stripe checkout: ${formatError(error)}`);
 			return NextResponse.json(

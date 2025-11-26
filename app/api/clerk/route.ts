@@ -46,9 +46,7 @@ export async function POST(request: Request): Promise<Response> {
 	}
 
 	const type = event.type;
-	log.debug(type);
 
-	// todo: clean code
 	if (type === 'user.created') {
 		const data = event.data;
 		const { id, email_addresses, first_name, last_name, public_metadata } =
@@ -59,15 +57,18 @@ export async function POST(request: Request): Promise<Response> {
 		// create user in any case
 		const user = await createUser(id, email, name);
 
+		const hasInvite =
+			'teamId' in public_metadata && 'role' in public_metadata;
+
 		let teamId: string, role: UserRole;
-		if ('teamId' in public_metadata && 'role' in public_metadata) {
+		if (hasInvite) {
 			// reuse public teamId and role
 			teamId = public_metadata.teamId as string;
 			role = public_metadata.role as UserRole;
 			await logActivity(teamId, user.id, ActivityType.ACCEPT_INVITATION);
 		} else {
 			// create new team by default
-			const newTeam = await createTeam();
+			const newTeam = await createTeam(user.id);
 			teamId = newTeam.id;
 			role = UserRole.OWNER;
 		}
