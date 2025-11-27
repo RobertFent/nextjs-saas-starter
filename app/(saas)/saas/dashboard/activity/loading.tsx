@@ -11,7 +11,17 @@ export default function ActivityPageSkeleton(): JSX.Element {
 				<CardHeader>
 					<CardTitle>Recent Activity</CardTitle>
 				</CardHeader>
-				<CardContent className='min-h-[88px]' />
+				<CardContent>
+					<div className='animate-pulse space-y-4 mt-1'>
+						<div className='flex items-center space-x-4'>
+							<div className='size-8 rounded-full bg-muted'></div>
+							<div className='space-y-2'>
+								<div className='h-4 w-32 bg-muted rounded'></div>
+								<div className='h-3 w-14 bg-muted rounded'></div>
+							</div>
+						</div>
+					</div>
+				</CardContent>
 			</Card>
 		</section>
 	);
