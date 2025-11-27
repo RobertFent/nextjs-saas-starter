@@ -8,22 +8,21 @@ import {
 	ClerkLoading,
 	SignedIn,
 	SignedOut,
-	SignInButton,
-	UserButton
+	SignInButton
 } from '@clerk/nextjs';
 
-const UserMenu = (): JSX.Element => {
+const ClerkMenu = (): JSX.Element => {
 	return (
 		<>
 			<ClerkLoading>
 				{/* Skeleton or placeholder */}
-				<div className='w-7 h-7 rounded-full bg-gray-200 animate-pulse' />
+				<div className='rounded-full bg-accent h-10 sm:h-12 px-4 sm:px-5 sm:w-22 animate-pulse' />
 			</ClerkLoading>
 
 			<ClerkLoaded>
 				<SignedOut>
 					<SignInButton>
-						<button className='bg-[#6c47ff] text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer'>
+						<button className='bg-accent rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer'>
 							Sign In
 						</button>
 					</SignInButton>
@@ -31,11 +30,10 @@ const UserMenu = (): JSX.Element => {
 
 				<SignedIn>
 					<Link href='/saas' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
+						<span className='ml-2 text-xl font-semibold'>
 							Application
 						</span>
 					</Link>
-					<UserButton />
 				</SignedIn>
 			</ClerkLoaded>
 		</>
@@ -44,33 +42,29 @@ const UserMenu = (): JSX.Element => {
 
 const Header = (): JSX.Element => {
 	return (
-		<header className='border-b border-gray-200'>
+		<header className='border-b'>
 			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center'>
 				{/* left items */}
 				<Link href='/' className='flex items-center'>
-					<CircleIcon className='h-6 w-6 text-orange-500' />
-					<span className='ml-2 text-xl font-semibold text-gray-900'>
+					<CircleIcon className='h-6 w-6 text-accent' />
+					<span className='ml-2 text-xl font-semibold'>
 						Application
 					</span>
 				</Link>
 				{/* right items */}
 				<div className='flex items-center space-x-4'>
-					<Link href='/' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
-							Home
-						</span>
+					<Link href='/'>
+						<span className='ml-2 text-xl font-semibold'>Home</span>
 					</Link>
-					<Link href='/pricing' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
+					<Link href='/pricing'>
+						<span className='ml-2 text-xl font-semibold'>
 							Pricing
 						</span>
 					</Link>
-					<Link href='/blog' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
-							Blog
-						</span>
+					<Link href='/blog'>
+						<span className='ml-2 text-xl font-semibold'>Blog</span>
 					</Link>
-					<UserMenu />
+					<ClerkMenu />
 				</div>
 			</div>
 		</header>

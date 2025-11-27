@@ -193,7 +193,7 @@ function TeamMembers({
 									<div
 										className={
 											isCurrentMemberUser
-												? 'text-orange-500'
+												? 'text-accent'
 												: ''
 										}
 									>
@@ -313,7 +313,7 @@ function InviteTeamMember({ isOwner }: { isOwner: boolean }): JSX.Element {
 					)}
 					<Button
 						type='submit'
-						className='bg-orange-500 hover:bg-orange-600 text-white'
+						className='bg-accent hover:bg-accent-foreground hover:text-accent'
 						disabled={isInvitePending || !isOwner}
 					>
 						{isInvitePending ? (
