@@ -30,8 +30,8 @@ const ClerkMenu = (): JSX.Element => {
 
 				<SignedIn>
 					<Link href='/saas' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold'>
-							Application
+						<span className='sm:ml-2 sm:text-xl font-semibold'>
+							Dashboard
 						</span>
 					</Link>
 				</SignedIn>
@@ -43,26 +43,30 @@ const ClerkMenu = (): JSX.Element => {
 const Header = (): JSX.Element => {
 	return (
 		<header className='border-b'>
-			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center'>
+			<div className='max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2 sm:py-4 flex justify-between items-center overflow-auto'>
 				{/* left items */}
 				<Link href='/' className='flex items-center'>
-					<CircleIcon className='h-6 w-6 text-accent' />
-					<span className='ml-2 text-xl font-semibold'>
+					<CircleIcon className='h-4 sm:h-6 w-4 sm:w-6 text-accent' />
+					<span className='ml-2 sm:text-xl font-semibold'>
 						Application
 					</span>
 				</Link>
 				{/* right items */}
 				<div className='flex items-center space-x-4'>
 					<Link href='/'>
-						<span className='ml-2 text-xl font-semibold'>Home</span>
+						<span className='ml-4 sm:text-xl font-semibold'>
+							Home
+						</span>
 					</Link>
 					<Link href='/pricing'>
-						<span className='ml-2 text-xl font-semibold'>
+						<span className='sm:ml-2 sm:text-xl font-semibold'>
 							Pricing
 						</span>
 					</Link>
 					<Link href='/blog'>
-						<span className='ml-2 text-xl font-semibold'>Blog</span>
+						<span className='sm:ml-2 sm:text-xl font-semibold'>
+							Blog
+						</span>
 					</Link>
 					<ClerkMenu />
 				</div>
