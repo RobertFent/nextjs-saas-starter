@@ -72,7 +72,7 @@ export default async function ActivityPage(): Promise<JSX.Element> {
 
 	return (
 		<section className='flex-1 p-4 lg:p-8'>
-			<h1 className='text-lg lg:text-2xl font-medium text-gray-900 mb-6'>
+			<h1 className='text-lg lg:text-2xl font-medium mb-6'>
 				Activity Log
 			</h1>
 			<Card>
@@ -95,14 +95,14 @@ export default async function ActivityPage(): Promise<JSX.Element> {
 										key={log.id}
 										className='flex items-center space-x-4'
 									>
-										<div className='bg-orange-100 rounded-full p-2'>
-											<Icon className='w-5 h-5 text-orange-600' />
+										<div className='bg-accent rounded-full p-2'>
+											<Icon className='w-5 h-5 text-accent-foreground' />
 										</div>
 										<div className='flex-1'>
-											<p className='text-sm font-medium text-gray-900'>
+											<p className='text-sm font-medium'>
 												{formattedAction}
 											</p>
-											<p className='text-xs text-gray-500'>
+											<p className='text-xs text-foreground/80'>
 												{getRelativeTime(
 													new Date(log.timestamp)
 												)}
@@ -114,11 +114,11 @@ export default async function ActivityPage(): Promise<JSX.Element> {
 						</ul>
 					) : (
 						<div className='flex flex-col items-center justify-center text-center py-12'>
-							<AlertCircle className='h-12 w-12 text-orange-500 mb-4' />
-							<h3 className='text-lg font-semibold text-gray-900 mb-2'>
+							<AlertCircle className='h-12 w-12 text-accent mb-4' />
+							<h3 className='text-lg font-semibold mb-2'>
 								No activity yet
 							</h3>
-							<p className='text-sm text-gray-500 max-w-sm'>
+							<p className='text-sm text-foreground/80 max-w-sm'>
 								When you perform actions like signing in,
 								they&apos;ll appear here.
 							</p>

@@ -86,10 +86,10 @@ function TeamMembersSkeleton(): JSX.Element {
 			<CardContent>
 				<div className='animate-pulse space-y-4 mt-1'>
 					<div className='flex items-center space-x-4'>
-						<div className='size-8 rounded-full bg-gray-200'></div>
+						<div className='size-8 rounded-full bg-muted' />
 						<div className='space-y-2'>
-							<div className='h-4 w-32 bg-gray-200 rounded'></div>
-							<div className='h-3 w-14 bg-gray-200 rounded'></div>
+							<div className='h-4 w-32 bg-muted rounded' />
+							<div className='h-3 w-14 bg-muted rounded' />
 						</div>
 					</div>
 				</div>
@@ -193,7 +193,7 @@ function TeamMembers({
 									<div
 										className={
 											isCurrentMemberUser
-												? 'text-orange-500'
+												? 'text-accent'
 												: ''
 										}
 									>
@@ -313,7 +313,7 @@ function InviteTeamMember({ isOwner }: { isOwner: boolean }): JSX.Element {
 					)}
 					<Button
 						type='submit'
-						className='bg-orange-500 hover:bg-orange-600 text-white'
+						className='bg-accent hover:bg-accent-foreground hover:text-accent'
 						disabled={isInvitePending || !isOwner}
 					>
 						{isInvitePending ? (

@@ -7,19 +7,19 @@ import { RedirectToSignIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 const Header = (): JSX.Element => {
 	return (
-		<header className='border-b border-gray-200'>
-			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center'>
+		<header className='border-b'>
+			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center overflow-auto'>
 				{/* left items */}
 				<Link href='/saas' className='flex items-center'>
-					<CircleIcon className='h-6 w-6 text-orange-500' />
-					<span className='ml-2 text-xl font-semibold text-gray-900'>
+					<CircleIcon className='h-4 sm:h-6 w-4 sm:w-6 text-accent' />
+					<span className='ml-2 sm:text-xl font-semibold'>
 						Application
 					</span>
 				</Link>
 				{/* right items */}
 				<div className='flex items-center space-x-4'>
 					<Link href='/saas/dashboard' className='flex items-center'>
-						<span className='ml-2 text-xl font-semibold text-gray-900'>
+						<span className='ml-4 sm:text-xl font-semibold'>
 							Dashboard
 						</span>
 					</Link>
